@@ -151,17 +151,88 @@
   <!-- ================= CATÁLOGO ================= -->
   <section class="screen" data-screen="catalogo" aria-label="Catálogo">
     <div class="wrap">
-      <div class="page-head">
-        <h1>Catálogo</h1>
-        <p class="sub" data-cat-count aria-live="polite"></p>
+      <div class="cat-layout">
+
+        <aside class="cat-sidebar" id="cat-sidebar">
+          <div class="sidebar-head">
+            <span class="sidebar-title">Filtros</span>
+            <button class="x" type="button" data-close-filters aria-label="Cerrar filtros"><svg class="i"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-head">
+              <h3>Categoría</h3>
+              <button class="fg-toggle" type="button" data-fg-toggle aria-expanded="true">−</button>
+            </div>
+            <div class="fg-body">
+              <div class="circles circles-sm" data-cats="cat" role="group" aria-label="Filtrar por categoría"></div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-head">
+              <h3>Talla</h3>
+              <button class="fg-toggle" type="button" data-fg-toggle aria-expanded="true">−</button>
+            </div>
+            <div class="fg-body">
+              <div class="sizes sizes-sm" data-sizes="cat" role="group" aria-label="Filtrar por talla"></div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-head">
+              <h3>Precio (S/)</h3>
+              <button class="fg-toggle" type="button" data-fg-toggle aria-expanded="true">−</button>
+            </div>
+            <div class="fg-body">
+              <div class="price-radios" role="radiogroup" aria-label="Rango de precio">
+                <label class="price-radio"><input type="radio" name="price-range" value="all" checked data-price-radio><span>Todos los precios</span></label>
+                <label class="price-radio"><input type="radio" name="price-range" value="0-149" data-price-radio><span>Menos de S/150</span></label>
+                <label class="price-radio"><input type="radio" name="price-range" value="150-199" data-price-radio><span>S/150 – S/199</span></label>
+                <label class="price-radio"><input type="radio" name="price-range" value="200-449" data-price-radio><span>S/200 – S/449</span></label>
+                <label class="price-radio"><input type="radio" name="price-range" value="450-99999" data-price-radio><span>Más de S/450</span></label>
+                <input type="radio" name="price-range" value="custom" style="position:absolute;opacity:0;pointer-events:none" data-price-custom-radio>
+              </div>
+              <div class="price-custom">
+                <div class="price-custom-row">
+                  <div class="price-field">
+                    <span class="price-field-lbl">Mín. S/</span>
+                    <input class="price-input num" type="number" data-price-min placeholder="125" min="0" inputmode="numeric">
+                  </div>
+                  <span class="price-dash">−</span>
+                  <div class="price-field">
+                    <span class="price-field-lbl">Máx. S/</span>
+                    <input class="price-input num" type="number" data-price-max placeholder="480" inputmode="numeric">
+                  </div>
+                  <button class="price-ok" type="button" data-price-ok>Ok</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="cat-main">
+          <div class="cat-topbar">
+            <div class="cat-topbar-left">
+              <h1 class="cat-h1">Catálogo</h1>
+              <p class="sub" data-cat-count aria-live="polite"></p>
+            </div>
+            <div class="sort-row">
+              <label class="sort-lbl" for="sort-sel">Ordenar por</label>
+              <select class="sort-sel" id="sort-sel" data-sort>
+                <option value="default">Recomendados</option>
+                <option value="price-asc">Precio: menor a mayor</option>
+                <option value="price-desc">Precio: mayor a menor</option>
+                <option value="new">Nuevos primero</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-open-filters" type="button" data-open-filters>
+            <svg class="i"><use href="#i-grid"/></svg> Filtros
+          </button>
+          <div class="grid" data-grid="cat"></div>
+        </div>
+
       </div>
-      <div class="circles circles-sm" data-cats="cat" role="group" aria-label="Filtrar por categoría"></div>
-      <div class="filter-sizes">
-        <p class="lbl" id="lbl-tallas">Filtra por talla</p>
-        <div class="sizes sizes-sm" data-sizes="cat" role="group" aria-labelledby="lbl-tallas"></div>
-      </div>
-      <div class="grid" data-grid="cat"></div>
     </div>
+    <div class="filters-scrim" data-filters-scrim></div>
   </section>
 
   <!-- ================= DETALLE ================= -->

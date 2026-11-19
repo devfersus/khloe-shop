@@ -53,11 +53,26 @@
   const state = {
     cat: 'todos',
     sizes: new Set(),
+    priceMin: 0,
+    priceMax: Infinity,
     order: store.get('order', {}),
     contact: store.get('contact', {}),
     lastSent: null
   };
-  const matches = p => catById(state.cat).test(p) && (!state.sizes.size || [...state.sizes].some(i => p.slots.has(i)));
+  const matches = p => catById(state.cat).test(p)
+    && (!state.sizes.size || [...state.sizes].some(i => p.slots.has(i)))
+    && p.price >= state.priceMin
+    && p.price <= state.priceMax;
+
+  function resetPriceFilter() {
+    state.priceMin = 0; state.priceMax = Infinity;
+    const allR = document.querySelector('[name="price-range"][value="all"]');
+    if (allR) allR.checked = true;
+    const minEl = document.querySelector('[data-price-min]');
+    const maxEl = document.querySelector('[data-price-max]');
+    if (minEl) minEl.value = '';
+    if (maxEl) maxEl.value = '';
+  }
 
   /* ---------- Banner ---------- */
   const SLIDES = [
@@ -162,38 +177,100 @@
   }
   function renderGrids() {
     $('[data-grid="home"]').innerHTML = PRODUCTS.map(card).join('');
-    $('[data-grid="cat"]').innerHTML = PRODUCTS.map(card).join('') + `
-      <div class="empty" data-empty hidden>
-        <h3>No hay modelos con ese filtro… todavía</h3>
-        <p>Prueba otra talla o categoría, o escríbenos y te avisamos cuando llegue.</p>
-        <div class="row"><button class="btn btn-ghost" type="button" data-reset>Quitar filtros</button><a class="btn btn-wa" data-wa-plain href="#" target="_blank" rel="noopener">${icon('chat')} Preguntar por WhatsApp</a></div>
-      </div>`;
+    // El grid del catálogo se renderiza dinámicamente en applyFilter()
     wirePlainWa();
   }
   function applyFilter() {
-    let visible = 0;
-    $$('.card', $('[data-grid="cat"]')).forEach(el => {
-      const show = matches(PRODUCTS.find(p => p.slug === el.dataset.slug));
-      el.hidden = !show; if (show) visible++;
-    });
-    $('[data-empty]').hidden = visible > 0;
+    const sortEl = $('[data-sort]');
+    const sortVal = sortEl ? sortEl.value : 'default';
+
+    let filtered = PRODUCTS.filter(p => matches(p));
+    if (sortVal === 'price-asc') filtered = [...filtered].sort((a, b) => a.unitPrice - b.unitPrice);
+    else if (sortVal === 'price-desc') filtered = [...filtered].sort((a, b) => b.unitPrice - a.unitPrice);
+    else if (sortVal === 'new') filtered = [...filtered].sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+
+    const grid = $('[data-grid="cat"]');
+    if (filtered.length) {
+      grid.innerHTML = filtered.map(card).join('');
+    } else {
+      grid.innerHTML = `
+        <div class="empty" data-empty>
+          <h3>No hay modelos con ese filtro… todavía</h3>
+          <p>Prueba otra talla o categoría, o escríbenos y te avisamos cuando llegue.</p>
+          <div class="row"><button class="btn btn-ghost" type="button" data-reset>Quitar filtros</button><a class="btn btn-wa" data-wa-plain href="#" target="_blank" rel="noopener">${icon('chat')} Preguntar por WhatsApp</a></div>
+        </div>`;
+    }
+    wirePlainWa();
+
     $$('[data-cats="cat"] [data-cat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === state.cat)));
     $$('[data-sizes="cat"] [data-size]').forEach(b => b.setAttribute('aria-pressed', String(state.sizes.has(+b.dataset.size))));
-    $('[data-sizes="cat"] [data-clear]').hidden = !state.sizes.size;
+    const clearBtn = $('[data-sizes="cat"] [data-clear]');
+    if (clearBtn) clearBtn.hidden = !state.sizes.size;
+
     const c = catById(state.cat);
-    const parts = [`${visible} ${visible === 1 ? 'modelo' : 'modelos'}`];
+    const parts = [`${filtered.length} ${filtered.length === 1 ? 'modelo' : 'modelos'}`];
     if (c.id !== 'todos') parts.push(c.label.toLowerCase());
     if (state.sizes.size) parts.push('tallas ' + [...state.sizes].sort((a, b) => a - b).map(i => SLOTS[i]).join(', '));
-    $('[data-cat-count]').textContent = parts.join(' · ');
+    const countEl = $('[data-cat-count]');
+    if (countEl) countEl.textContent = parts.join(' · ');
   }
   document.addEventListener('click', e => {
-    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; history.replaceState(null, '', '#/catalogo'); applyFilter(); }
+    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; resetPriceFilter(); history.replaceState(null, '', '#/catalogo'); applyFilter(); }
     const q = e.target.closest('[data-quick]');
     if (q) {
       const p = PRODUCTS.find(x => x.slug === q.dataset.quick);
       addToOrder(p.slug, 1);
       q.classList.remove('done'); void q.offsetWidth; q.classList.add('done');
       toast(`Agregaste 1 ${packWord(p, 1)} · ${p.units} prendas`, 'Ver pedido', openOrder);
+    }
+    // Colapsar/expandir grupo de filtro
+    const fg = e.target.closest('[data-fg-toggle]');
+    if (fg) {
+      const body = fg.closest('.filter-group').querySelector('.fg-body');
+      const isOpen = fg.getAttribute('aria-expanded') !== 'false';
+      body.hidden = isOpen;
+      fg.setAttribute('aria-expanded', String(!isOpen));
+      fg.textContent = isOpen ? '+' : '−';
+    }
+    // Ok del filtro de precio
+    if (e.target.closest('[data-price-ok]')) {
+      const minEl = document.querySelector('[data-price-min]');
+      const maxEl = document.querySelector('[data-price-max]');
+      const min = parseFloat(minEl?.value);
+      const max = parseFloat(maxEl?.value);
+      state.priceMin = isNaN(min) ? 0 : min;
+      state.priceMax = isNaN(max) ? Infinity : max;
+      const customR = document.querySelector('[data-price-custom-radio]');
+      if (customR) customR.checked = true;
+      applyFilter();
+    }
+    // Abrir sidebar en mobile
+    if (e.target.closest('[data-open-filters]')) {
+      document.getElementById('cat-sidebar')?.classList.add('open');
+      document.querySelector('[data-filters-scrim]')?.classList.add('on');
+    }
+    // Cerrar sidebar en mobile
+    if (e.target.closest('[data-close-filters]') || e.target.closest('[data-filters-scrim]')) {
+      document.getElementById('cat-sidebar')?.classList.remove('open');
+      document.querySelector('[data-filters-scrim]')?.classList.remove('on');
+    }
+  });
+  // Ordenar y filtrar precio al cambiar selectores
+  document.addEventListener('change', e => {
+    if (e.target.closest('[data-sort]')) { applyFilter(); return; }
+    if (e.target.name === 'price-range' && e.target.value !== 'custom') {
+      if (e.target.value === 'all') {
+        state.priceMin = 0; state.priceMax = Infinity;
+      } else {
+        const parts = e.target.value.split('-');
+        state.priceMin = Number(parts[0]);
+        state.priceMax = Number(parts[1]);
+      }
+      const minEl = document.querySelector('[data-price-min]');
+      const maxEl = document.querySelector('[data-price-max]');
+      if (minEl) minEl.value = state.priceMin > 0 ? state.priceMin : '';
+      if (maxEl) maxEl.value = state.priceMax < 90000 ? state.priceMax : '';
+      applyFilter();
     }
   });
 
@@ -552,7 +629,13 @@
       }
     }
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#pedido').classList.contains('on')) closeOrder(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('#pedido').classList.contains('on')) closeOrder();
+    if (e.key === 'Enter' && (e.target.dataset.priceMin !== undefined || e.target.dataset.priceMax !== undefined)) {
+      e.preventDefault();
+      document.querySelector('[data-price-ok]')?.click();
+    }
+  });
 
   /* ---------- Toast ---------- */
   let tt;
