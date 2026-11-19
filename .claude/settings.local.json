@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:khloe-shopp-demo.vercel.app)",
+      "Bash(node -e \"\nconst https = require\\(''https''\\);\nfunction fetch\\(url\\) {\n  return new Promise\\(\\(resolve, reject\\) => {\n    https.get\\(url, {headers: {''User-Agent'': ''Mozilla/5.0''}}, \\(res\\) => {\n      let data = '''';\n      res.on\\(''data'', chunk => data += chunk\\);\n      res.on\\(''end'', \\(\\) => resolve\\(data\\)\\);\n    }\\).on\\(''error'', reject\\);\n  }\\);\n}\nfetch\\(''https://khloe-shopp-demo.vercel.app/assets/agencias.js?v=22''\\).then\\(d => console.log\\(d\\)\\);\n\")",
+      "Bash(node -e \"\nconst fs = require\\(''fs''\\);\nfs.mkdirSync\\(''c:/TIENDA_PATRICK/assets'', {recursive: true}\\);\nfs.mkdirSync\\(''c:/TIENDA_PATRICK/logo'', {recursive: true}\\);\nconsole.log\\(''done''\\);\n\")"
+    ],
+    "additionalDirectories": [
+      "C:\\TIENDA_PATRICK"
+    ]
+  }
+}
