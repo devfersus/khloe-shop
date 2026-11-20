@@ -606,6 +606,27 @@ button.size:active{transform:scale(.94)}
 .price-ok{height:38px;padding:0 13px;background:var(--ink);color:#fff;border:0;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;flex:none;transition:background-color .15s;margin-bottom:0}
 .price-ok:hover{background:#000}
 
+/* ---- Portada: categorías en 4 columnas × 2 filas ---- */
+[data-cats="home"].circles{
+  grid-template-columns:repeat(4,1fr);
+  gap:24px 20px;
+}
+[data-cats="home"] .disc{max-width:160px}
+[data-cats="home"] .circle .name{font-size:15px;font-weight:700}
+@media (max-width:899px){
+  [data-cats="home"].circles{
+    display:grid!important;
+    grid-template-columns:repeat(4,1fr)!important;
+    overflow-x:visible!important;
+    gap:14px 8px!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  [data-cats="home"] .circle{flex:unset!important;width:auto!important;scroll-snap-align:none!important}
+  [data-cats="home"] .disc{max-width:90px}
+  [data-cats="home"] .circle .name{font-size:12px}
+}
+
 @media (max-width:899px){
   .cat-layout{grid-template-columns:1fr;padding-top:16px}
   .cat-sidebar{
