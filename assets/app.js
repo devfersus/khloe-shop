@@ -40,7 +40,9 @@
     { id: 'navidad', label: 'Navidad', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestido-navideno/03.jpg', test: p => p.category === 'Navideña' },
     { id: 'series', label: 'Series', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-c/02.jpg', test: p => p.saleType === 'serie' },
     { id: 'boxes', label: 'Boxes', img: 'https://khloe-shopp-demo.vercel.app/seed/images/box-vestidos-jeans-surtido/02.jpg', test: p => p.saleType !== 'serie' },
-    { id: 'todos', label: 'Todo', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-a/02.jpg', test: () => true }
+    { id: 'todos', label: 'Todo', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-a/02.jpg', test: () => true },
+    { id: 'nuevo', label: 'Nuevo', home: false, img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-a/03.jpg', test: p => p.isNew },
+    { id: 'favoritos', label: 'Favoritos', home: false, img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-b/03.jpg', test: p => state.favs.has(p.slug) }
   ];
   const catById = id => CATS.find(c => c.id === id) || CATS.find(c => c.id === 'todos');
   const fromPrice = test => Math.min(...PRODUCTS.filter(test).map(p => p.unitPrice));
@@ -57,9 +59,16 @@
     priceMax: Infinity,
     order: store.get('order', {}),
     contact: store.get('contact', {}),
+    favs: new Set(store.get('favs', [])),
+    q: '',
+    homeTab: 'todos',
     lastSent: null
   };
+  const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const haystack = p => norm([p.name, p.category, p.summary, p.saleType === 'serie' ? 'serie series' : 'box boxes pack cajon', ...p.tags].join(' '));
+  const matchQ = p => !state.q || norm(state.q).split(/\s+/).filter(Boolean).every(w => haystack(p).includes(w));
   const matches = p => catById(state.cat).test(p)
+    && matchQ(p)
     && (!state.sizes.size || [...state.sizes].some(i => p.slots.has(i)))
     && p.price >= state.priceMin
     && p.price <= state.priceMax;
@@ -75,34 +84,42 @@
   }
 
   /* ---------- Banner ---------- */
+  const IMG = (slug, n) => `https://khloe-shopp-demo.vercel.app/seed/images/${slug}/0${n}.jpg`;
   const SLIDES = [
-    { tone: 'pink', h1: true, title: 'Ropa infantil importada, por mayor', text: 'Series y boxes con stock propio, listos para despachar.', cat: 'todos', cta: 'Ver catálogo',
-      img: 'https://khloe-shopp-demo.vercel.app/seed/images/box-vestidos-jeans-surtido/03.jpg', alt: 'Niña con vestido jean de bolsillos y lazo' },
-    { tone: 'cream', title: 'Vestidos de Navidad', text: 'Blancos con lazo rojo, en serie de tallas para bebé.', cat: 'navidad', cta: 'Ver Navidad',
-      img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestido-navideno/02.jpg', alt: 'Vestido blanco con mangas de vuelo y gran lazo rojo' },
-    { tone: 'sky', title: 'Overoles jean de niño', text: 'Cajón surtido con parches y aplicaciones.', cat: 'overoles', cta: 'Ver overoles',
-      img: 'https://khloe-shopp-demo.vercel.app/seed/images/cajon-overoles-jeans/03.jpg', alt: 'Overol jean de niño con parches de dinosaurios' }
+    { tone: 'pink', h1: true, eyebrow: 'Nueva temporada · Por mayor', title: 'Ropa infantil importada', text: 'Series y boxes con stock propio, listos para despachar a todo el Perú.', cat: 'todos', cta: 'Comprar ahora',
+      img: IMG('box-vestidos-jeans-surtido', 3), img2: IMG('serie-vestidos-jeans-a', 2) },
+    { tone: 'red', eyebrow: 'Colección Navidad', title: 'Vestidos de Navidad', text: 'Blancos con lazo rojo, en serie de tallas para bebé.', cat: 'navidad', cta: 'Ver Navidad',
+      img: IMG('serie-vestido-navideno', 2), img2: IMG('serie-vestido-navideno', 3) },
+    { tone: 'sky', eyebrow: 'Para ellos', title: 'Overoles jean de niño', text: 'Cajón surtido con parches y aplicaciones.', cat: 'overoles', cta: 'Ver overoles',
+      img: IMG('cajon-overoles-jeans', 3), img2: IMG('cajon-overoles-jeans', 2) }
   ];
   function renderHero() {
     const host = $('[data-hero]');
     host.innerHTML = SLIDES.map((s, i) => {
       const H = s.h1 ? 'h1' : 'h2';
+      const href = `#/catalogo${s.cat === 'todos' ? '' : '/' + s.cat}`;
       return `
       <article class="slide t-${s.tone}" aria-roledescription="lámina" aria-label="${i + 1} de ${SLIDES.length}">
         <div class="slide-copy">
+          <span class="eyebrow">${esc(s.eyebrow)}</span>
           <${H}>${esc(s.title)}</${H}>
           <p>${esc(s.text)}</p>
-          <p class="from">Desde <b class="num">${money(fromPrice(catById(s.cat).test))}</b> c/u</p>
-          <a class="btn btn-ink" href="#/catalogo${s.cat === 'todos' ? '' : '/' + s.cat}">${esc(s.cta)} ${icon('arrow')}</a>
+          <p class="from">Desde <b class="num">${money(fromPrice(catById(s.cat).test))}</b> <span>c/u</span></p>
+          <a class="btn btn-ink" href="${href}">${esc(s.cta)} ${icon('arrow')}</a>
         </div>
-        <img src="${s.img}" alt="${esc(s.alt)}" width="1179" height="1575"${i ? ' loading="lazy"' : ' fetchpriority="high"'}>
+        <a class="slide-pics" href="${href}" tabindex="-1" aria-hidden="true">
+          <img src="${s.img}" alt="" width="1179" height="1575"${i ? ' loading="lazy"' : ' fetchpriority="high"'}>
+          <img src="${s.img2}" alt="" width="1179" height="1575" loading="lazy">
+        </a>
       </article>`;
     }).join('');
     const dots = $('[data-hero-dots]');
     dots.innerHTML = SLIDES.map((s, i) => `<button type="button" data-dot="${i}" aria-label="Lámina ${i + 1}: ${esc(s.title)}" aria-current="${i === 0}"></button>`).join('');
+    let current = 0;
     const go = i => host.scrollTo({ left: host.children[i].offsetLeft - host.offsetLeft, behavior: reduced.matches ? 'auto' : 'smooth' });
     dots.addEventListener('click', e => { const b = e.target.closest('[data-dot]'); if (b) { go(+b.dataset.dot); hold(); } });
-    let current = 0;
+    $('[data-hero-prev]').addEventListener('click', () => { go((current - 1 + SLIDES.length) % SLIDES.length); hold(); });
+    $('[data-hero-next]').addEventListener('click', () => { go((current + 1) % SLIDES.length); hold(); });
     host.addEventListener('scroll', () => {
       const i = Math.round(host.scrollLeft / host.clientWidth);
       if (i !== current) { current = i; $$('[data-dot]', dots).forEach((d, j) => d.setAttribute('aria-current', String(j === i))); }
@@ -120,17 +137,21 @@
   /* ---------- Círculos de categoría y talla ---------- */
   function renderCircles() {
     const count = c => PRODUCTS.filter(c.test).length;
-    $('[data-cats="home"]').innerHTML = CATS.map(c => `
+    $('[data-cats="home"]').innerHTML = CATS.filter(c => c.home !== false).map(c => `
       <a class="circle" href="#/catalogo${c.id === 'todos' ? '' : '/' + c.id}">
         <span class="disc"><img src="${c.img}" alt="" loading="lazy" width="160" height="160"></span>
         <span class="name">${c.label}</span>
       </a>`).join('');
     const catHost = $('[data-cats="cat"]');
-    catHost.innerHTML = CATS.map(c => `
-      <button class="circle" type="button" data-cat="${c.id}" aria-pressed="false">
-        <span class="disc"><img src="${c.img}" alt="" loading="lazy" width="160" height="160"></span>
-        <span class="name">${c.label} <span class="num">${count(c)}</span></span>
-      </button>`).join('');
+    const paintCatList = () => {
+      catHost.innerHTML = CATS.map(c => `
+        <button class="circle" type="button" data-cat="${c.id}" aria-pressed="${c.id === state.cat}">
+          <span class="disc"><img src="${c.img}" alt="" loading="lazy" width="160" height="160"></span>
+          <span class="name">${c.label} <span class="num">${count(c)}</span></span>
+        </button>`).join('');
+    };
+    paintCatList();
+    renderCircles.repaintCats = paintCatList;
     catHost.addEventListener('click', e => {
       const b = e.target.closest('[data-cat]'); if (!b) return;
       const id = b.dataset.cat;
@@ -138,11 +159,11 @@
       state.cat = id; applyFilter();
     });
 
-    const sizeBtn = (i, cls = '') => `<button class="size${cls}" type="button" data-size="${i}" aria-pressed="false" aria-label="${SLOT_LONG[i]}">${SLOTS[i]}</button>`;
+    const sizeBtn = i => `<button class="size" type="button" data-size="${i}" aria-pressed="false" aria-label="${SLOT_LONG[i]}">${SLOTS[i]}</button>`;
     $('[data-sizes="home"]').innerHTML = SLOTS.map((_, i) => sizeBtn(i)).join('');
     $('[data-sizes="home"]').addEventListener('click', e => {
       const b = e.target.closest('[data-size]'); if (!b) return;
-      state.sizes = new Set([+b.dataset.size]); state.cat = 'todos';
+      state.sizes = new Set([+b.dataset.size]); state.cat = 'todos'; clearSearch();
       location.hash = '#/catalogo';
     });
     const catSizes = $('[data-sizes="cat"]');
@@ -157,26 +178,85 @@
   }
 
   /* ---------- Tarjetas ---------- */
-  function card(p) {
+  const isFav = p => state.favs.has(p.slug);
+  const favBtn = (p, cls = 'fav') => `<button class="${cls}" type="button" data-fav="${p.slug}" aria-pressed="${isFav(p)}" aria-label="${isFav(p) ? 'Quitar de' : 'Guardar en'} favoritos: ${esc(p.name)}">${icon('heart')}</button>`;
+  // Si algún día el producto trae `compareAt` (precio anterior real por prenda), se muestra tachado con su % de descuento.
+  const discount = p => p.compareAt > p.unitPrice ? Math.round((1 - p.unitPrice / p.compareAt) * 100) : 0;
+  const scarce = p => p.stock === 'casi-agotado';
+  function card(p, variant = '') {
+    const alt = p.images.find(src => src !== p.cover && src !== p.flyer);
+    const off = discount(p);
     return `
-      <article class="card" data-slug="${p.slug}">
+      <article class="card ${variant}" data-slug="${p.slug}">
         <div class="media">
-        <a class="ph" href="#/producto/${p.slug}" tabindex="-1" aria-hidden="true">
-          <img src="${p.cover}" alt="" loading="lazy" width="1179" height="1540">
-          <span class="badges">${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}<b>${typeLabel(p)}</b></span>
-        </a>
-        <button class="quick" type="button" data-quick="${p.slug}" aria-label="Agregar 1 ${packWord(p, 1)} de ${esc(p.name)} al pedido">${icon('plus')}</button>
+          <a class="ph" href="#/producto/${p.slug}" tabindex="-1" aria-hidden="true">
+            <img src="${p.cover}" alt="" loading="lazy" width="1179" height="1540">
+            ${alt ? `<img class="ph-alt" src="${alt}" alt="" loading="lazy" width="1179" height="1540">` : ''}
+            <span class="badges">${off ? `<b class="b-off">-${off}%</b>` : ''}${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}</span>
+            <span class="ph-type">${typeLabel(p)} prendas</span>
+          </a>
+          ${favBtn(p)}
         </div>
         <div class="body">
           <h3><a href="#/producto/${p.slug}">${esc(p.name)}</a></h3>
-          <p class="price"><b class="num">${money(p.unitPrice)}</b> <small>c/u</small></p>
-          <p class="meta"><span class="num">${p.units}</span> prendas · <span class="num">${money(p.price)}</span> ${p.saleType === 'serie' ? 'la serie' : 'el box'}</p>
-          <p class="meta">${sizeSpan(p)}</p>
+          <div class="price-row">
+            <p class="price"><b class="num">${money(p.unitPrice)}</b><small>c/u</small>${off ? `<s class="num">${money(p.compareAt)}</s>` : ''}</p>
+            <button class="quick" type="button" data-quick="${p.slug}" aria-label="Agregar 1 ${packWord(p, 1)} de ${esc(p.name)} al pedido">${icon('bagplus')}</button>
+          </div>
+          <p class="meta"><span class="num">${money(p.price)}</span> ${p.saleType === 'serie' ? 'la serie' : 'el box'} · ${sizeSpan(p)}</p>
+          ${scarce(p) ? `<p class="hurry">${icon('bolt')} Casi agotado</p>` : ''}
         </div>
       </article>`;
   }
+
+  /* ---------- Ofertas flash ---------- */
+  function flashCard(p) {
+    return `
+      <a class="fcard" href="#/producto/${p.slug}">
+        <span class="fimg"><img src="${p.cover}" alt="" loading="lazy" width="1179" height="1540">${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}</span>
+        <span class="fprice num">${money(p.unitPrice)}<small> c/u</small></span>
+        <span class="fname">${esc(p.name)}</span>
+        <span class="fbar${scarce(p) ? ' hot' : ''}"><i style="width:${scarce(p) ? 88 : 46}%"></i><em>${scarce(p) ? 'Casi agotado' : typeLabel(p) + ' prendas'}</em></span>
+      </a>`;
+  }
+  function renderFlash() {
+    const list = [...PRODUCTS].sort((a, b) => (scarce(b) - scarce(a)) || (b.isNew - a.isNew) || (a.unitPrice - b.unitPrice));
+    $('[data-flash]').innerHTML = list.map(flashCard).join('');
+    const cd = $('[data-countdown]');
+    const pad = n => String(n).padStart(2, '0');
+    const tick = () => {
+      const now = new Date();
+      const end = new Date(now); end.setHours(24, 0, 0, 0);
+      let s = Math.max(0, Math.floor((end - now) / 1000));
+      const h = Math.floor(s / 3600); s -= h * 3600;
+      const m = Math.floor(s / 60); s -= m * 60;
+      const b = cd.querySelectorAll('b');
+      b[0].textContent = pad(h); b[1].textContent = pad(m); b[2].textContent = pad(s);
+    };
+    tick(); setInterval(tick, 1000);
+  }
+
+  /* ---------- Pestañas de "Para ti" ---------- */
+  const HOME_TABS = ['todos', 'nuevo', 'nina', 'nino', 'vestidos', 'navidad', 'boxes'];
+  function renderHomeTabs() {
+    const host = $('[data-home-tabs]');
+    host.innerHTML = HOME_TABS.map(id => { const c = catById(id); return `<button type="button" role="tab" data-tab="${id}" aria-selected="${id === state.homeTab}">${id === 'todos' ? 'Recomendados' : c.label}</button>`; }).join('');
+    host.addEventListener('click', e => {
+      const b = e.target.closest('[data-tab]'); if (!b) return;
+      state.homeTab = b.dataset.tab;
+      $$('[data-tab]', host).forEach(x => x.setAttribute('aria-selected', String(x === b)));
+      paintHomeGrid();
+    });
+  }
+  function paintHomeGrid() {
+    const list = PRODUCTS.filter(catById(state.homeTab).test);
+    $('[data-grid="home"]').innerHTML = list.length ? list.map(p => card(p)).join('')
+      : `<div class="empty"><h3>Pronto llegan más modelos</h3><p>Escríbenos y te avisamos cuando lleguen.</p></div>`;
+  }
   function renderGrids() {
-    $('[data-grid="home"]').innerHTML = PRODUCTS.map(card).join('');
+    renderHomeTabs();
+    paintHomeGrid();
+    renderFlash();
     // El grid del catálogo se renderiza dinámicamente en applyFilter()
     wirePlainWa();
   }
@@ -190,32 +270,112 @@
     else if (sortVal === 'new') filtered = [...filtered].sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
 
     const grid = $('[data-grid="cat"]');
+    const c = catById(state.cat);
     if (filtered.length) {
-      grid.innerHTML = filtered.map(card).join('');
+      grid.innerHTML = filtered.map(p => card(p)).join('');
+    } else if (c.id === 'favoritos' && !state.favs.size) {
+      grid.innerHTML = `
+        <div class="empty" data-empty>
+          <span class="disc-ico">${icon('heart')}</span>
+          <h3>Aún no tienes favoritos</h3>
+          <p>Toca el corazón de cualquier modelo para guardarlo aquí y compararlo después.</p>
+          <div class="row"><a class="btn btn-ink" href="#/catalogo">Ver catálogo</a></div>
+        </div>`;
     } else {
       grid.innerHTML = `
         <div class="empty" data-empty>
+          <span class="disc-ico">${icon('search')}</span>
           <h3>No hay modelos con ese filtro… todavía</h3>
-          <p>Prueba otra talla o categoría, o escríbenos y te avisamos cuando llegue.</p>
+          <p>Prueba otra talla, categoría o búsqueda, o escríbenos y te avisamos cuando llegue.</p>
           <div class="row"><button class="btn btn-ghost" type="button" data-reset>Quitar filtros</button><a class="btn btn-wa" data-wa-plain href="#" target="_blank" rel="noopener">${icon('chat')} Preguntar por WhatsApp</a></div>
         </div>`;
     }
     wirePlainWa();
 
+    if (renderCircles.repaintCats && c.id === 'favoritos') renderCircles.repaintCats();
     $$('[data-cats="cat"] [data-cat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === state.cat)));
     $$('[data-sizes="cat"] [data-size]').forEach(b => b.setAttribute('aria-pressed', String(state.sizes.has(+b.dataset.size))));
     const clearBtn = $('[data-sizes="cat"] [data-clear]');
     if (clearBtn) clearBtn.hidden = !state.sizes.size;
 
-    const c = catById(state.cat);
-    const parts = [`${filtered.length} ${filtered.length === 1 ? 'modelo' : 'modelos'}`];
-    if (c.id !== 'todos') parts.push(c.label.toLowerCase());
-    if (state.sizes.size) parts.push('tallas ' + [...state.sizes].sort((a, b) => a - b).map(i => SLOTS[i]).join(', '));
+    const title = state.q ? `“${state.q}”` : c.id === 'todos' ? 'Catálogo' : c.label;
+    const titleEl = $('[data-cat-title]'); if (titleEl) titleEl.textContent = title;
+    const crumb = $('[data-cat-crumb]'); if (crumb) crumb.textContent = state.q ? 'Búsqueda' : (c.id === 'todos' ? 'Catálogo' : c.label);
     const countEl = $('[data-cat-count]');
-    if (countEl) countEl.textContent = parts.join(' · ');
+    if (countEl) countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'modelo' : 'modelos'}`;
+
+    // Chips de filtros activos (removibles)
+    const chips = [];
+    if (state.q) chips.push(['q', `Búsqueda: ${state.q}`]);
+    if (c.id !== 'todos') chips.push(['cat', c.label]);
+    [...state.sizes].sort((a, b) => a - b).forEach(i => chips.push(['size:' + i, 'Talla ' + SLOTS[i]]));
+    if (state.priceMin > 0 || state.priceMax < Infinity) {
+      chips.push(['price', state.priceMax < 90000 ? `S/${state.priceMin} – S/${state.priceMax}` : `Desde S/${state.priceMin}`]);
+    }
+    const chipHost = $('[data-active-chips]');
+    if (chipHost) {
+      chipHost.innerHTML = chips.map(([k, l]) => `<button type="button" class="achip" data-unchip="${k}" aria-label="Quitar filtro ${esc(l)}">${esc(l)} ${icon('x')}</button>`).join('')
+        + (chips.length > 1 ? `<button type="button" class="achip-clear" data-reset>Limpiar todo</button>` : '');
+      chipHost.hidden = !chips.length;
+    }
+    markNav();
   }
+  function clearSearch() {
+    state.q = '';
+    const inp = $('[data-search-input]'); if (inp) inp.value = '';
+  }
+  // Menú de categorías del header: marca la activa
+  function markNav() {
+    const onCat = state.screen === 'catalogo';
+    $$('[data-navcat]').forEach(a => {
+      if (onCat && !state.q && a.dataset.navcat === state.cat) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  }
+  function toggleFav(slug) {
+    const p = PRODUCTS.find(x => x.slug === slug); if (!p) return;
+    const on = !state.favs.has(slug);
+    on ? state.favs.add(slug) : state.favs.delete(slug);
+    store.set('favs', [...state.favs]);
+    $$(`[data-fav="${slug}"]`).forEach(b => {
+      b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('aria-label', `${on ? 'Quitar de' : 'Guardar en'} favoritos: ${p.name}`);
+      b.classList.remove('pop'); void b.offsetWidth; if (on) b.classList.add('pop');
+    });
+    updateFavCount();
+    if (state.screen === 'catalogo' && state.cat === 'favoritos') applyFilter();
+    else if (renderCircles.repaintCats) { renderCircles.repaintCats(); }
+    toast(on ? 'Guardado en favoritos' : 'Quitado de favoritos', on ? 'Ver favoritos' : '', () => { location.hash = '#/catalogo/favoritos'; });
+  }
+  function updateFavCount() {
+    $$('[data-fav-count]').forEach(c => { c.textContent = state.favs.size; c.hidden = !state.favs.size; });
+  }
+  document.addEventListener('submit', e => {
+    if (!e.target.closest('[data-search]')) return;
+    e.preventDefault();
+    const v = $('[data-search-input]').value.trim();
+    state.q = v; state.cat = 'todos'; state.sizes.clear(); resetPriceFilter();
+    if (location.hash === '#/catalogo') { state.screen = 'catalogo'; applyFilter(); window.scrollTo(0, 0); }
+    else location.hash = '#/catalogo';
+    $('[data-search-input]').blur();
+  });
   document.addEventListener('click', e => {
-    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; resetPriceFilter(); history.replaceState(null, '', '#/catalogo'); applyFilter(); }
+    const f = e.target.closest('[data-fav]');
+    if (f) { e.preventDefault(); toggleFav(f.dataset.fav); return; }
+    // Cualquier enlace a una categoría limpia la búsqueda
+    const catLink = e.target.closest('a[href^="#/catalogo"]');
+    if (catLink) clearSearch();
+    const un = e.target.closest('[data-unchip]');
+    if (un) {
+      const k = un.dataset.unchip;
+      if (k === 'q') clearSearch();
+      else if (k === 'cat') { state.cat = 'todos'; history.replaceState(null, '', '#/catalogo'); }
+      else if (k === 'price') resetPriceFilter();
+      else if (k.startsWith('size:')) state.sizes.delete(+k.slice(5));
+      applyFilter();
+    }
+  });
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; clearSearch(); resetPriceFilter(); history.replaceState(null, '', '#/catalogo'); applyFilter(); }
     const q = e.target.closest('[data-quick]');
     if (q) {
       const p = PRODUCTS.find(x => x.slug === q.dataset.quick);
@@ -294,33 +454,42 @@
     ].filter(Boolean);
     const suggest = Math.round(p.unitPrice * 1.7 / 5) * 5;
     const unitName = packWord(p, 2);
+    const off = discount(p);
     host.innerHTML = `
-      <p class="crumbs"><a href="#/catalogo">Catálogo</a> <span aria-hidden="true">›</span> ${esc(p.category)}</p>
+      <p class="crumbs"><a href="#/">Inicio</a> <span aria-hidden="true">/</span> <a href="#/catalogo">Catálogo</a> <span aria-hidden="true">/</span> ${esc(p.category)}</p>
       <div class="detail">
         <div class="gallery">
-          <div class="main"><img data-main src="${imgs[0]}" alt="${esc(p.name)}, foto 1 de ${imgs.length}" width="1179" height="1540"></div>
           <div class="thumbs" role="group" aria-label="Fotos">
-            ${imgs.map((src, i) => `<button type="button" data-img="${i}" aria-label="Foto ${i + 1}${i === imgs.length - 1 ? ' (afiche)' : ''}" aria-current="${i === 0}"><img src="${src}" alt="" loading="lazy" width="72" height="88"></button>`).join('')}
+            ${imgs.map((src, i) => `<button type="button" data-img="${i}" aria-label="Foto ${i + 1}${i === imgs.length - 1 ? ' (afiche)' : ''}" aria-current="${i === 0}"><img src="${src}" alt="" loading="lazy" width="72" height="96"></button>`).join('')}
+          </div>
+          <div class="main">
+            <img data-main src="${imgs[0]}" alt="${esc(p.name)}, foto 1 de ${imgs.length}" width="1179" height="1540">
+            <button class="gnav prev" type="button" data-gnav="-1" aria-label="Foto anterior">${icon('chevl')}</button>
+            <button class="gnav next" type="button" data-gnav="1" aria-label="Foto siguiente">${icon('chev')}</button>
+            <span class="gcount num" data-gcount>1 / ${imgs.length}</span>
           </div>
         </div>
         <div class="info">
-          <span class="badges">${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}<b>${typeLabel(p)} prendas</b></span>
+          <span class="badges">${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}<b class="b-type">${typeLabel(p)} prendas</b>${scarce(p) ? `<b class="b-hot">${icon('bolt')} Casi agotado</b>` : ''}</span>
           <h1>${esc(p.name)}</h1>
+          <p class="sku">Código: <span class="num">${esc(p.code)}</span></p>
+
+          <div class="price-box">
+            <div class="big-price"><b class="num">${money(p.unitPrice)}</b><span>por prenda</span>${off ? `<s class="num">${money(p.compareAt)}</s><em class="b-off">-${off}%</em>` : ''}</div>
+            <p class="pack">${typeLabel(p)} prendas · <b class="num">${money(p.price)}</b> ${p.saleType === 'serie' ? 'la serie' : 'el box'}</p>
+          </div>
           <p class="summary">${esc(p.summary)}</p>
 
-          <div class="big-price"><b class="num">${money(p.unitPrice)}</b><span>por prenda</span></div>
-          <p class="pack">${typeLabel(p)} prendas · <b class="num">${money(p.price)}</b> ${p.saleType === 'serie' ? 'la serie' : 'el box'}</p>
-
           <div class="block">
-            <p class="lbl">Tallas que trae</p>
+            <p class="lbl">Tallas que trae <span>${p.saleType === 'serie' ? 'Una prenda por talla' : 'Surtido'}</span></p>
             <div class="sizes sizes-read" aria-label="Tallas que trae: ${p.sizes.map(prettySize).join(', ')}">
               ${SLOTS.map((s, i) => `<span class="size${p.slots.has(i) ? ' on' : ''}" aria-hidden="true">${s}</span>`).join('')}
             </div>
-            <p class="size-note">${p.saleType === 'serie' ? 'Una prenda por talla' : 'Surtido'}: ${p.sizes.map(prettySize).join(' · ')}</p>
+            <p class="size-note">${p.sizes.map(prettySize).join(' · ')}</p>
           </div>
 
           <div class="block qty">
-            <p class="lbl" id="lbl-qty">¿Cuántas ${unitName} llevas?</p>
+            <p class="lbl" id="lbl-qty">Cantidad de ${unitName}</p>
             <div class="qty-row">
               <div class="presets" role="group" aria-labelledby="lbl-qty">
                 ${PRESETS.map(n => `<button type="button" class="chip" data-preset="${n}" aria-pressed="${n === 1}"><span class="num">${n}</span></button>`).join('')}
@@ -332,21 +501,34 @@
               </div>
             </div>
             <div class="qty-sum" data-sum aria-live="polite"></div>
-            <button class="btn btn-ink btn-block" type="button" data-add="${p.slug}">${icon('bag')} Agregar al pedido</button>
-            <p class="added" data-added aria-live="polite"></p>
-            <p class="ship">${icon('truck')}<span>Despacho en 2–3 días hábiles por Shalom. Recoges en la agencia que elijas.</span></p>
-          </div>
-
-          <div class="margin">
-            <label for="sell">Saca tu cuenta: ¿a cuánto venderías cada prenda?</label>
-            <div class="row">
-              <span class="money"><span>S/</span><input id="sell" type="number" inputmode="decimal" min="0" step="1" value="${suggest}" data-sell></span>
-              <span class="res" data-res></span>
+            <div class="buy-row">
+              <button class="btn btn-ink btn-block" type="button" data-add="${p.slug}">${icon('bag')} Agregar al pedido</button>
+              ${favBtn(p, 'fav-lg')}
             </div>
-            <small>Cálculo referencial: no incluye el costo de envío.</small>
+            <p class="added" data-added aria-live="polite"></p>
           </div>
 
-          <table class="spec"><tbody>${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table>
+          <ul class="assure">
+            <li>${icon('truck')}<div><b>Despacho en 2–3 días hábiles</b><span>Por Shalom. Recoges en la agencia que elijas.</span></div></li>
+            <li>${icon('card')}<div><b>Pagas al confirmar</b><span>Yape, Plin o transferencia, coordinado por WhatsApp.</span></div></li>
+            <li>${icon('shield')}<div><b>Prendas nuevas y etiquetadas</b><span>Cada una en su bolsa, listas para revender.</span></div></li>
+          </ul>
+
+          <details class="acc" open>
+            <summary>Saca tu cuenta ${icon('chevd')}</summary>
+            <div class="margin">
+              <label for="sell">¿A cuánto venderías cada prenda?</label>
+              <div class="row">
+                <span class="money"><span>S/</span><input id="sell" type="number" inputmode="decimal" min="0" step="1" value="${suggest}" data-sell></span>
+                <span class="res" data-res></span>
+              </div>
+              <small>Cálculo referencial: no incluye el costo de envío.</small>
+            </div>
+          </details>
+          <details class="acc" open>
+            <summary>Descripción ${icon('chevd')}</summary>
+            <table class="spec"><tbody>${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table>
+          </details>
         </div>
       </div>`;
 
@@ -370,11 +552,19 @@
       toast(`Agregaste ${qty} ${packWord(p, qty)} · ${qty * p.units} prendas`, 'Ver pedido', openOrder);
     });
     const main = $('[data-main]', host);
-    $$('[data-img]', host).forEach(b => b.addEventListener('click', () => {
-      const i = +b.dataset.img;
-      main.src = imgs[i]; main.alt = `${p.name}, foto ${i + 1} de ${imgs.length}`;
-      $$('[data-img]', host).forEach(x => x.setAttribute('aria-current', String(x === b)));
-    }));
+    let shown = 0;
+    const show = i => {
+      shown = (i + imgs.length) % imgs.length;
+      main.src = imgs[shown]; main.alt = `${p.name}, foto ${shown + 1} de ${imgs.length}`;
+      $('[data-gcount]', host).textContent = `${shown + 1} / ${imgs.length}`;
+      $$('[data-img]', host).forEach((x, j) => x.setAttribute('aria-current', String(j === shown)));
+    };
+    $$('[data-img]', host).forEach(b => b.addEventListener('click', () => show(+b.dataset.img)));
+    $$('[data-gnav]', host).forEach(b => b.addEventListener('click', () => show(shown + +b.dataset.gnav)));
+    // Deslizar la foto con el dedo en móvil
+    let x0 = null;
+    main.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+    main.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) show(shown + (dx < 0 ? 1 : -1)); x0 = null; }, { passive: true });
     const sell = $('[data-sell]', host);
     const res = $('[data-res]', host);
     function calc() {
@@ -388,8 +578,8 @@
 
     const rel = PRODUCTS.filter(x => x.slug !== p.slug)
       .sort((a, b) => (b.tags.filter(t => p.tags.includes(t)).length) - (a.tags.filter(t => p.tags.includes(t)).length))
-      .slice(0, 3);
-    $('[data-grid="rel"]').innerHTML = rel.map(card).join('');
+      .slice(0, 5);
+    $('[data-grid="rel"]').innerHTML = rel.map(p => card(p)).join('');
   }
 
   /* ---------- Pedido ---------- */
@@ -398,7 +588,7 @@
   function saveOrder() { store.set('order', state.order); updateCount(); }
   function updateCount() {
     const t = totals();
-    $$('[data-count]').forEach(c => { c.textContent = t.packs; c.hidden = !t.packs && !!c.closest('.tabbar'); });
+    $$('[data-count]').forEach(c => { c.textContent = t.packs; c.hidden = !t.packs; });
     $$('[data-open-order]').forEach(btn => {
       btn.classList.remove('bump'); void btn.offsetWidth; if (t.packs) btn.classList.add('bump');
       btn.setAttribute('aria-label', `Mi pedido, ${t.packs} ${t.packs === 1 ? 'paquete' : 'paquetes'}`);
@@ -586,9 +776,9 @@
       <h1>Tu pedido se abrió en WhatsApp.</h1>
       <p class="sub">Si WhatsApp no se abrió, toca el botón de abajo. Tu lista sigue guardada aquí por si quieres cambiar algo.</p>
       <ol class="how how-tight">
-        <li class="t-pink"><span class="disc">${icon('check')}<b class="num">1</b></span><h3>Confirmamos stock</h3><p>Te respondemos por WhatsApp.</p></li>
-        <li class="t-sky"><span class="disc">${icon('chat')}<b class="num">2</b></span><h3>Coordinamos el pago</h3><p>Por Yape, Plin o transferencia.</p></li>
-        <li class="t-cream"><span class="disc">${icon('truck')}<b class="num">3</b></span><h3>Despachamos en 2–3 días</h3><p>Por Shalom, a la agencia que elegiste.</p></li>
+        <li><span class="step num">1</span>${icon('check')}<h3>Confirmamos stock</h3><p>Te respondemos por WhatsApp.</p></li>
+        <li><span class="step num">2</span>${icon('card')}<h3>Coordinamos el pago</h3><p>Por Yape, Plin o transferencia.</p></li>
+        <li><span class="step num">3</span>${icon('truck')}<h3>Despachamos en 2–3 días</h3><p>Por Shalom, a la agencia que elegiste.</p></li>
       </ol>
       <div class="row">
         <a class="btn btn-wa" href="${state.lastSent.url}" target="_blank" rel="noopener">${icon('chat')} Abrir WhatsApp otra vez</a>
@@ -666,11 +856,13 @@
     else if (h.startsWith('enviado')) name = 'enviado';
     state.screen = name;
     $$('.screen').forEach(s => s.classList.toggle('on', s.dataset.screen === name));
-    const current = name === 'catalogo' ? 'catalogo' : h.startsWith('como') ? 'como' : name === 'home' ? 'home' : '';
+    const current = name === 'catalogo' ? (state.cat === 'favoritos' ? 'favoritos' : 'catalogo') : h.startsWith('como') ? 'como' : name === 'home' ? 'home' : '';
     $$('[data-nav]').forEach(a => {
       if (a.dataset.nav === current) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    if (name === 'catalogo') applyFilter();
+    document.getElementById('cat-sidebar')?.classList.remove('open');
+    document.querySelector('[data-filters-scrim]')?.classList.remove('on');
+    if (name === 'catalogo') applyFilter(); else markNav();
     if (name === 'producto') renderDetail(arg);
     if (name === 'enviado') renderSent();
     const titles = { home: 'Khloe Shopp · Ropa infantil importada por mayor', catalogo: 'Catálogo · Khloe Shopp', enviado: 'Pedido enviado · Khloe Shopp' };
@@ -684,8 +876,18 @@
   renderCircles();
   renderGrids();
   updateCount();
+  updateFavCount();
   window.addEventListener('hashchange', route);
   route();
+  // Franja de avisos: rota un mensaje cada 4 s
+  const msgs = $$('.announce-track p');
+  let mi = 0; msgs[0].classList.add('on');
+  if (msgs.length > 1 && !reduced.matches) setInterval(() => {
+    const prev = mi;
+    msgs[prev].classList.replace('on', 'off');
+    setTimeout(() => msgs[prev].classList.remove('off'), 500);
+    mi = (mi + 1) % msgs.length; msgs[mi].classList.add('on');
+  }, 4000);
   const top = $('#top');
   addEventListener('scroll', () => top.classList.toggle('scrolled', scrollY > 8), { passive: true });
 })();
