@@ -200,7 +200,9 @@
     { id: 'nina', label: 'Niña', scope: 'nina', main: ['todos', 'nuevo', 'series', 'boxes'], picks: [...GARMENTS, 'bebe', 'navidad'] },
     { id: 'nino', label: 'Niño', scope: 'nino', main: ['todos', 'nuevo', 'series', 'boxes'], picks: [...GARMENTS, 'bebe'] },
     { id: 'bebe', label: 'Bebé', scope: 'bebe', main: ['todos', 'nuevo', 'series', 'boxes'], picks: [...GARMENTS, 'nina', 'nino'] },
-    { id: 'ropa', label: 'Prendas', scope: null, main: ['todos', 'nuevo', 'nina', 'nino', 'bebe'], picks: GARMENTS },
+    // Una sección por prenda: "Polos de niña / niño / bebé" + sus modelos
+    ...GARMENTS.map(g => ({ id: g, label: catById(g).label, scope: g, garment: true, main: ['todos', 'nuevo', 'series', 'boxes'], picks: ['nina', 'nino', 'bebe'] })),
+    { id: 'ropa', label: 'Todas las prendas', scope: null, main: ['todos', 'nuevo', 'nina', 'nino', 'bebe'], picks: GARMENTS },
     { id: 'temporada', label: 'Temporadas', scope: null, main: ['todos', 'nuevo'], picks: ['navidad', 'invierno', 'verano'] },
     { id: 'mayor', label: 'Compra por mayor', scope: null, main: ['todos', 'series', 'boxes', 'favoritos'], products: true }
   ];
@@ -218,7 +220,7 @@
   function megaTile(href, label, img, sub) {
     return `<a class="mtile" href="${href}">
         <span class="mdisc">${img ? `<img src="${img}" alt="" loading="lazy" width="96" height="96">` : `<svg class="i grid4" aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><circle cx="16.75" cy="16.75" r="3.4"/></svg>`}</span>
-        <span class="mname">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+        <span class="mname" title="${esc(label)}"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>
       </a>`;
   }
   function megaPanes(m) {
@@ -234,13 +236,22 @@
     };
     const main = m.main.map(id => {
       const c = catById(id);
-      if (id === 'todos') return megaTile(megaHref('todos', m.scope), m.scope ? `Todo ${m.label}` : MAIN_LABEL.todos, '');
+      if (id !== 'todos' && id !== 'favoritos' && !PRODUCTS.some(p => c.test(p) && scopeTest(p))) return '';
+      if (id === 'todos') return megaTile(megaHref('todos', m.scope), m.scope && !m.garment ? `Todo ${m.label}` : MAIN_LABEL.todos, '');
       return megaTile(megaHref(id, m.scope), MAIN_LABEL[id] || c.label, id === 'favoritos' ? c.img : (coverFor(c.test) || c.img));
     }).join('');
     let picks;
     if (m.products) {
       picks = [...PRODUCTS].sort((a, b) => (b.stock === 'casi-agotado') - (a.stock === 'casi-agotado') || b.isNew - a.isNew)
         .slice(0, 14).map(p => megaTile(`#/producto/${p.slug}`, p.name, p.cover, money(p.unitPrice) + ' c/u')).join('');
+    } else if (m.garment) {
+      // Prenda × público (Polos de niña…) y luego cada modelo de esa prenda
+      picks = m.picks.map(id => {
+        const c = catById(id);
+        const n = PRODUCTS.filter(p => c.test(p) && scopeTest(p)).length;
+        if (!n) return '';
+        return megaTile(megaHref(m.id, id), `${m.label} de ${AUDIENCE[id]}`, coverFor(c.test) || c.img, `${n} ${n === 1 ? 'modelo' : 'modelos'}`);
+      }).join('') + PRODUCTS.filter(scopeTest).map(p => megaTile(`#/producto/${p.slug}`, p.name, p.cover, money(p.unitPrice) + ' c/u')).join('');
     } else {
       picks = m.picks.map(id => {
         const c = catById(id);
