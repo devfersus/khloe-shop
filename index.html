@@ -68,17 +68,32 @@
   </div>
   <nav class="catnav" aria-label="Categorías">
     <div class="wrap catnav-row">
+      <button class="catnav-all" type="button" data-mega-btn data-mega="all" aria-expanded="false" aria-controls="mega">Categorías <svg class="i" aria-hidden="true"><use href="#i-chevd"/></svg></button>
       <a href="#/" data-nav="home">Inicio</a>
-      <a href="#/catalogo/nuevo" data-navcat="nuevo" class="hot">Nuevo</a>
-      <a href="#/catalogo/nina" data-navcat="nina">Niña</a>
-      <a href="#/catalogo/nino" data-navcat="nino">Niño</a>
-      <a href="#/catalogo/vestidos" data-navcat="vestidos">Vestidos</a>
-      <a href="#/catalogo/overoles" data-navcat="overoles">Overoles</a>
-      <a href="#/catalogo/navidad" data-navcat="navidad" class="sale">Navidad</a>
-      <a href="#/catalogo/series" data-navcat="series">Series</a>
-      <a href="#/catalogo/boxes" data-navcat="boxes">Boxes</a>
-      <a href="#/catalogo" data-navcat="todos">Todo</a>
+      <a href="#/catalogo/nuevo" data-navcat="nuevo" data-mega="ropa" class="hot">Nuevo</a>
+      <a href="#/catalogo/nina" data-navcat="nina" data-mega="nina">Niña</a>
+      <a href="#/catalogo/nino" data-navcat="nino" data-mega="nino">Niño</a>
+      <a href="#/catalogo/bebe" data-navcat="bebe" data-mega="bebe">Bebé</a>
+      <a href="#/catalogo/vestidos" data-navcat="vestidos" data-mega="ropa">Vestidos</a>
+      <a href="#/catalogo/jeans" data-navcat="jeans" data-mega="ropa">Jeans</a>
+      <a href="#/catalogo/conjuntos" data-navcat="conjuntos" data-mega="ropa">Conjuntos</a>
+      <a href="#/catalogo/polos" data-navcat="polos" data-mega="ropa">Polos</a>
+      <a href="#/catalogo/poleras" data-navcat="poleras" data-mega="ropa">Poleras</a>
+      <a href="#/catalogo/chompas" data-navcat="chompas" data-mega="ropa">Chompas</a>
+      <a href="#/catalogo/casacas" data-navcat="casacas" data-mega="ropa">Casacas</a>
+      <a href="#/catalogo/pijamas" data-navcat="pijamas" data-mega="ropa">Pijamas</a>
+      <a href="#/catalogo/overoles" data-navcat="overoles" data-mega="ropa">Overoles</a>
+      <a href="#/catalogo/navidad" data-navcat="navidad" data-mega="temporada" class="sale">Navidad</a>
+      <a href="#/catalogo/series" data-navcat="series" data-mega="mayor">Series</a>
+      <a href="#/catalogo/boxes" data-navcat="boxes" data-mega="mayor">Boxes</a>
+      <a href="#/catalogo" data-navcat="todos" data-mega="mayor">Todo</a>
       <a href="#/como-pedir" data-nav="como">Cómo pedir</a>
+    </div>
+    <div class="mega" id="mega" data-mega-panel hidden>
+      <div class="wrap mega-in">
+        <ul class="mega-list" data-mega-list aria-label="Grupos de categorías"></ul>
+        <div class="mega-body" data-mega-body></div>
+      </div>
     </div>
   </nav>
 </header>
@@ -335,6 +350,9 @@
         <li><a href="#/catalogo/nuevo">Lo nuevo</a></li>
         <li><a href="#/catalogo/nina">Niña</a></li>
         <li><a href="#/catalogo/nino">Niño</a></li>
+        <li><a href="#/catalogo/bebe">Bebé</a></li>
+        <li><a href="#/catalogo/pijamas">Pijamas</a></li>
+        <li><a href="#/catalogo/casacas">Casacas</a></li>
         <li><a href="#/catalogo/navidad">Navidad</a></li>
         <li><a href="#/catalogo">Todo el catálogo</a></li>
       </ul>

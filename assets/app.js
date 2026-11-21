@@ -32,12 +32,23 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
   /* ---------- Categorías (círculos) ---------- */
+  const has = (p, t) => p.category === t || p.tags.includes(t);
   const CATS = [
     { id: 'nino', label: 'Niño', img: 'https://khloe-shopp-demo.vercel.app/seed/images/cajon-overoles-jeans/03.jpg', test: p => p.tags.includes('Niño') },
     { id: 'nina', label: 'Niña', img: 'https://khloe-shopp-demo.vercel.app/seed/images/box-vestidos-jeans-surtido/03.jpg', test: p => p.tags.includes('Niña') },
     { id: 'vestidos', label: 'Vestidos', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-b/02.jpg', test: p => p.tags.includes('Vestidos') },
     { id: 'overoles', label: 'Overoles', img: 'https://khloe-shopp-demo.vercel.app/seed/images/cajon-overoles-jeans/02.jpg', test: p => p.tags.includes('Overoles') },
+    { id: 'jeans', label: 'Jeans', img: 'assets/img/serie-conjunto-casaca-jean/03.jpg', test: p => has(p, 'Jeans') },
+    { id: 'conjuntos', label: 'Conjuntos', img: 'assets/img/box-conjuntos-nino/02.jpg', test: p => has(p, 'Conjuntos') },
+    { id: 'polos', label: 'Polos', img: 'assets/img/serie-polo-dino/03.jpg', test: p => has(p, 'Polos') },
+    { id: 'poleras', label: 'Poleras', img: 'assets/img/serie-polera-gatito/03.jpg', test: p => has(p, 'Poleras') },
+    { id: 'chompas', label: 'Chompas', img: 'assets/img/serie-chompa-tejida-bebe/02.jpg', test: p => has(p, 'Chompas') },
+    { id: 'casacas', label: 'Casacas', img: 'assets/img/serie-casaca-acolchada/02.jpg', test: p => has(p, 'Casacas') },
+    { id: 'pijamas', label: 'Pijamas', img: 'assets/img/serie-pijama-animalitos/02.jpg', test: p => has(p, 'Pijamas') },
+    { id: 'bebe', label: 'Bebé', img: 'assets/img/serie-enterizo-bebe-deportivo/02.jpg', test: p => has(p, 'Bebé') },
     { id: 'navidad', label: 'Navidad', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestido-navideno/03.jpg', test: p => p.category === 'Navideña' },
+    { id: 'invierno', label: 'Invierno', home: false, img: 'assets/img/serie-chompa-tejida-bebe/02.jpg', test: p => has(p, 'Invierno') || /invierno/i.test(p.details.temporada || '') },
+    { id: 'verano', label: 'Verano', home: false, img: 'assets/img/serie-vestido-lino-rosado/02.jpg', test: p => has(p, 'Verano') || /verano/i.test(p.details.temporada || '') },
     { id: 'series', label: 'Series', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-c/02.jpg', test: p => p.saleType === 'serie' },
     { id: 'boxes', label: 'Boxes', img: 'https://khloe-shopp-demo.vercel.app/seed/images/box-vestidos-jeans-surtido/02.jpg', test: p => p.saleType !== 'serie' },
     { id: 'todos', label: 'Todo', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-a/02.jpg', test: () => true },
@@ -54,6 +65,7 @@
   };
   const state = {
     cat: 'todos',
+    group: null, // segundo filtro opcional (Niña, Niño, Bebé…) desde el mega menú: #/catalogo/<cat>/<group>
     sizes: new Set(),
     priceMin: 0,
     priceMax: Infinity,
@@ -68,6 +80,7 @@
   const haystack = p => norm([p.name, p.category, p.summary, p.saleType === 'serie' ? 'serie series' : 'box boxes pack cajon', ...p.tags].join(' '));
   const matchQ = p => !state.q || norm(state.q).split(/\s+/).filter(Boolean).every(w => haystack(p).includes(w));
   const matches = p => catById(state.cat).test(p)
+    && (!state.group || catById(state.group).test(p))
     && matchQ(p)
     && (!state.sizes.size || [...state.sizes].some(i => p.slots.has(i)))
     && p.price >= state.priceMin
@@ -91,7 +104,11 @@
     { tone: 'red', eyebrow: 'Colección Navidad', title: 'Vestidos de Navidad', text: 'Blancos con lazo rojo, en serie de tallas para bebé.', cat: 'navidad', cta: 'Ver Navidad',
       img: IMG('serie-vestido-navideno', 2), img2: IMG('serie-vestido-navideno', 3) },
     { tone: 'sky', eyebrow: 'Para ellos', title: 'Overoles jean de niño', text: 'Cajón surtido con parches y aplicaciones.', cat: 'overoles', cta: 'Ver overoles',
-      img: IMG('cajon-overoles-jeans', 3), img2: IMG('cajon-overoles-jeans', 2) }
+      img: IMG('cajon-overoles-jeans', 3), img2: IMG('cajon-overoles-jeans', 2) },
+    { tone: 'pink', eyebrow: 'Para dormir', title: 'Pijamas de algodón', text: 'Estampados de animalitos en cuatro colores, de 12 meses a 5 años.', cat: 'pijamas', cta: 'Ver pijamas',
+      img: 'assets/img/serie-pijama-animalitos/02.jpg', img2: 'assets/img/serie-pijama-animalitos/03.jpg' },
+    { tone: 'sky', eyebrow: 'Temporada de frío', title: 'Chompas, poleras y casacas', text: 'Abrigo para bebés y niños, en series listas para revender.', cat: 'chompas', cta: 'Ver chompas',
+      img: 'assets/img/serie-chompa-tejida-bebe/02.jpg', img2: 'assets/img/serie-polera-gatito/03.jpg' }
   ];
   function renderHero() {
     const host = $('[data-hero]');
@@ -156,7 +173,7 @@
       const b = e.target.closest('[data-cat]'); if (!b) return;
       const id = b.dataset.cat;
       history.replaceState(null, '', '#/catalogo' + (id === 'todos' ? '' : '/' + id));
-      state.cat = id; applyFilter();
+      state.cat = id; state.group = null; applyFilter();
     });
 
     const sizeBtn = i => `<button class="size" type="button" data-size="${i}" aria-pressed="false" aria-label="${SLOT_LONG[i]}">${SLOTS[i]}</button>`;
@@ -175,6 +192,132 @@
       state.sizes.has(i) ? state.sizes.delete(i) : state.sizes.add(i);
       applyFilter();
     });
+  }
+
+  /* ---------- Mega menú de categorías ---------- */
+  const GARMENTS = ['vestidos', 'jeans', 'overoles', 'conjuntos', 'polos', 'poleras', 'chompas', 'casacas', 'pijamas'];
+  const MEGA = [
+    { id: 'nina', label: 'Niña', scope: 'nina', main: ['todos', 'nuevo', 'series', 'boxes'], picks: [...GARMENTS, 'bebe', 'navidad'] },
+    { id: 'nino', label: 'Niño', scope: 'nino', main: ['todos', 'nuevo', 'series', 'boxes'], picks: [...GARMENTS, 'bebe'] },
+    { id: 'bebe', label: 'Bebé', scope: 'bebe', main: ['todos', 'nuevo', 'series', 'boxes'], picks: [...GARMENTS, 'nina', 'nino'] },
+    { id: 'ropa', label: 'Prendas', scope: null, main: ['todos', 'nuevo', 'nina', 'nino', 'bebe'], picks: GARMENTS },
+    { id: 'temporada', label: 'Temporadas', scope: null, main: ['todos', 'nuevo'], picks: ['navidad', 'invierno', 'verano'] },
+    { id: 'mayor', label: 'Compra por mayor', scope: null, main: ['todos', 'series', 'boxes', 'favoritos'], products: true }
+  ];
+  const megaHref = (catId, scope) => {
+    if (!scope) return '#/catalogo' + (catId === 'todos' ? '' : '/' + catId);
+    return '#/catalogo/' + (catId === 'todos' ? scope : `${catId}/${scope}`);
+  };
+  const AUDIENCE = { nina: 'niña', nino: 'niño', bebe: 'bebé' };
+  const pickLabel = (c, scope) => {
+    if (!scope) return c.label;
+    if (AUDIENCE[c.id]) return `Bebé ${AUDIENCE[scope === 'bebe' ? c.id : scope]}`;
+    return `${c.label} de ${AUDIENCE[scope]}`;
+  };
+  const MAIN_LABEL ={ todos: 'Ver todo', nuevo: 'Novedades', favoritos: 'Mis favoritos' };
+  function megaTile(href, label, img, sub) {
+    return `<a class="mtile" href="${href}">
+        <span class="mdisc">${img ? `<img src="${img}" alt="" loading="lazy" width="96" height="96">` : `<svg class="i grid4" aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><circle cx="16.75" cy="16.75" r="3.4"/></svg>`}</span>
+        <span class="mname">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+      </a>`;
+  }
+  function megaPanes(m) {
+    const scopeTest = m.scope ? catById(m.scope).test : () => true;
+    // Foto representativa sin repetir dentro del mismo panel
+    const used = new Set();
+    const coverFor = test => {
+      const list = PRODUCTS.filter(p => test(p) && scopeTest(p));
+      for (const pass of [p => [p.cover], p => p.images.filter(s => s !== p.flyer)]) {
+        for (const p of list) for (const src of pass(p)) if (src && !used.has(src)) { used.add(src); return src; }
+      }
+      return list[0] && list[0].cover;
+    };
+    const main = m.main.map(id => {
+      const c = catById(id);
+      if (id === 'todos') return megaTile(megaHref('todos', m.scope), m.scope ? `Todo ${m.label}` : MAIN_LABEL.todos, '');
+      return megaTile(megaHref(id, m.scope), MAIN_LABEL[id] || c.label, id === 'favoritos' ? c.img : (coverFor(c.test) || c.img));
+    }).join('');
+    let picks;
+    if (m.products) {
+      picks = [...PRODUCTS].sort((a, b) => (b.stock === 'casi-agotado') - (a.stock === 'casi-agotado') || b.isNew - a.isNew)
+        .slice(0, 14).map(p => megaTile(`#/producto/${p.slug}`, p.name, p.cover, money(p.unitPrice) + ' c/u')).join('');
+    } else {
+      picks = m.picks.map(id => {
+        const c = catById(id);
+        const n = PRODUCTS.filter(p => c.test(p) && scopeTest(p)).length;
+        if (!n) return '';
+        return megaTile(megaHref(id, m.scope), pickLabel(c, m.scope), coverFor(c.test) || c.img, `${n} ${n === 1 ? 'modelo' : 'modelos'}`);
+      }).join('');
+    }
+    return `
+      <section class="mega-main" aria-label="Comprar por categoría">
+        <h3 class="mega-h"><svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z"/></svg>Comprar por categoría</h3>
+        <div class="mgrid mgrid-3">${main}</div>
+      </section>
+      <section class="mega-picks" aria-label="${m.products ? 'Los más pedidos' : 'Selección para ti'}">
+        <h3 class="mega-h plain">${m.products ? 'Los más pedidos' : 'Selección para ti'}</h3>
+        <div class="mgrid mgrid-7">${picks}</div>
+      </section>`;
+  }
+  function renderMega() {
+    const nav = $('.catnav'), panel = $('[data-mega-panel]'), btn = $('[data-mega-btn]');
+    if (!nav || !panel || !btn) return;
+    const list = $('[data-mega-list]', panel), body = $('[data-mega-body]', panel);
+    list.innerHTML = MEGA.map(m => `<li><button type="button" data-mega-group="${m.id}" aria-pressed="false">${esc(m.label)}${icon('chev')}</button></li>`).join('');
+    const canHover = matchMedia('(hover: hover) and (min-width: 900px)');
+    let active = null, openT = 0, closeT = 0;
+    const isOpen = () => panel.classList.contains('on');
+    const show = id => {
+      const m = MEGA.find(x => x.id === id) || MEGA[0];
+      if (m.id !== active) {
+        active = m.id;
+        body.innerHTML = megaPanes(m);
+        body.classList.remove('swap'); void body.offsetWidth; body.classList.add('swap');
+        $$('[data-mega-group]', list).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.megaGroup === m.id)));
+      }
+    };
+    // Resalta solo la pestaña de la barra que abrió el panel
+    const markTab = el => {
+      $$('.is-mega', nav).forEach(a => { if (a !== el) a.classList.remove('is-mega'); });
+      if (el) el.classList.add('is-mega');
+    };
+    const open = (id, el = null) => {
+      clearTimeout(closeT); show(id); markTab(el);
+      if (!isOpen()) { panel.hidden = false; requestAnimationFrame(() => panel.classList.add('on')); }
+      btn.setAttribute('aria-expanded', 'true'); nav.classList.add('mega-open');
+    };
+    const close = () => {
+      clearTimeout(openT); clearTimeout(closeT);
+      if (!isOpen()) return;
+      panel.classList.remove('on'); btn.setAttribute('aria-expanded', 'false'); nav.classList.remove('mega-open');
+      $$('.is-mega', nav).forEach(a => a.classList.remove('is-mega'));
+      setTimeout(() => { if (!isOpen()) panel.hidden = true; }, 220);
+    };
+    renderMega.close = close;
+
+    // Escritorio: abrir al pasar el mouse (con una pequeña espera para no parpadear)
+    nav.addEventListener('mouseover', e => {
+      if (!canHover.matches) return;
+      const t = e.target.closest('[data-mega]');
+      if (t && !panel.contains(t)) {
+        clearTimeout(openT); clearTimeout(closeT);
+        openT = setTimeout(() => t.dataset.mega === 'all' ? open(active || 'nina') : open(t.dataset.mega, t), isOpen() ? 60 : 140);
+      } else if (e.target.closest('.catnav-row') && !t) {
+        clearTimeout(openT);
+      }
+    });
+    nav.addEventListener('mouseleave', () => { if (canHover.matches) { clearTimeout(openT); closeT = setTimeout(close, 220); } });
+    nav.addEventListener('mouseenter', () => clearTimeout(closeT));
+    list.addEventListener('mouseover', e => { const b = e.target.closest('[data-mega-group]'); if (b && canHover.matches) { show(b.dataset.megaGroup); markTab(null); } });
+    list.addEventListener('click', e => { const b = e.target.closest('[data-mega-group]'); if (b) show(b.dataset.megaGroup); });
+    list.addEventListener('focusin', e => { const b = e.target.closest('[data-mega-group]'); if (b) show(b.dataset.megaGroup); });
+    // Clic / toque / teclado en "Categorías"
+    btn.addEventListener('click', () => { isOpen() ? close() : open(active || 'nina'); if (isOpen()) $('[data-mega-group][aria-pressed="true"]', list)?.focus({ preventScroll: true }); });
+    // Cualquier enlace del panel lleva a su categoría y cierra
+    panel.addEventListener('click', e => { if (e.target.closest('a[href]')) close(); });
+    document.addEventListener('click', e => { if (isOpen() && !nav.contains(e.target)) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen()) { close(); btn.focus(); } });
+    addEventListener('hashchange', close);
   }
 
   /* ---------- Tarjetas ---------- */
@@ -237,7 +380,7 @@
   }
 
   /* ---------- Pestañas de "Para ti" ---------- */
-  const HOME_TABS = ['todos', 'nuevo', 'nina', 'nino', 'vestidos', 'navidad', 'boxes'];
+  const HOME_TABS = ['todos', 'nuevo', 'nina', 'nino', 'bebe', 'vestidos', 'pijamas', 'casacas', 'navidad', 'boxes'];
   function renderHomeTabs() {
     const host = $('[data-home-tabs]');
     host.innerHTML = HOME_TABS.map(id => { const c = catById(id); return `<button type="button" role="tab" data-tab="${id}" aria-selected="${id === state.homeTab}">${id === 'todos' ? 'Recomendados' : c.label}</button>`; }).join('');
@@ -298,7 +441,8 @@
     const clearBtn = $('[data-sizes="cat"] [data-clear]');
     if (clearBtn) clearBtn.hidden = !state.sizes.size;
 
-    const title = state.q ? `“${state.q}”` : c.id === 'todos' ? 'Catálogo' : c.label;
+    const g = state.group && catById(state.group);
+    const title = state.q ? `“${state.q}”` : (c.id === 'todos' ? (g ? g.label : 'Catálogo') : c.label + (g ? ` · ${g.label}` : ''));
     const titleEl = $('[data-cat-title]'); if (titleEl) titleEl.textContent = title;
     const crumb = $('[data-cat-crumb]'); if (crumb) crumb.textContent = state.q ? 'Búsqueda' : (c.id === 'todos' ? 'Catálogo' : c.label);
     const countEl = $('[data-cat-count]');
@@ -308,6 +452,7 @@
     const chips = [];
     if (state.q) chips.push(['q', `Búsqueda: ${state.q}`]);
     if (c.id !== 'todos') chips.push(['cat', c.label]);
+    if (g) chips.push(['group', g.label]);
     [...state.sizes].sort((a, b) => a - b).forEach(i => chips.push(['size:' + i, 'Talla ' + SLOTS[i]]));
     if (state.priceMin > 0 || state.priceMax < Infinity) {
       chips.push(['price', state.priceMax < 90000 ? `S/${state.priceMin} – S/${state.priceMax}` : `Desde S/${state.priceMin}`]);
@@ -328,7 +473,7 @@
   function markNav() {
     const onCat = state.screen === 'catalogo';
     $$('[data-navcat]').forEach(a => {
-      if (onCat && !state.q && a.dataset.navcat === state.cat) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (onCat && !state.q && !state.group && a.dataset.navcat === state.cat) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
   }
   function toggleFav(slug) {
@@ -353,7 +498,7 @@
     if (!e.target.closest('[data-search]')) return;
     e.preventDefault();
     const v = $('[data-search-input]').value.trim();
-    state.q = v; state.cat = 'todos'; state.sizes.clear(); resetPriceFilter();
+    state.q = v; state.cat = 'todos'; state.group = null; state.sizes.clear(); resetPriceFilter();
     if (location.hash === '#/catalogo') { state.screen = 'catalogo'; applyFilter(); window.scrollTo(0, 0); }
     else location.hash = '#/catalogo';
     $('[data-search-input]').blur();
@@ -368,14 +513,15 @@
     if (un) {
       const k = un.dataset.unchip;
       if (k === 'q') clearSearch();
-      else if (k === 'cat') { state.cat = 'todos'; history.replaceState(null, '', '#/catalogo'); }
+      else if (k === 'cat') { state.cat = state.group || 'todos'; state.group = null; history.replaceState(null, '', '#/catalogo' + (state.cat === 'todos' ? '' : '/' + state.cat)); }
+      else if (k === 'group') { state.group = null; history.replaceState(null, '', '#/catalogo' + (state.cat === 'todos' ? '' : '/' + state.cat)); }
       else if (k === 'price') resetPriceFilter();
       else if (k.startsWith('size:')) state.sizes.delete(+k.slice(5));
       applyFilter();
     }
   });
   document.addEventListener('click', e => {
-    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; clearSearch(); resetPriceFilter(); history.replaceState(null, '', '#/catalogo'); applyFilter(); }
+    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; state.group = null; clearSearch(); resetPriceFilter(); history.replaceState(null, '', '#/catalogo'); applyFilter(); }
     const q = e.target.closest('[data-quick]');
     if (q) {
       const p = PRODUCTS.find(x => x.slug === q.dataset.quick);
@@ -849,8 +995,9 @@
     let name = 'home', arg = null;
     if (h.startsWith('catalogo')) {
       name = 'catalogo';
-      const c = h.split('/')[1];
+      const [, c, g] = h.split('/');
       state.cat = CATS.some(x => x.id === c) ? c : 'todos';
+      state.group = g && g !== state.cat && CATS.some(x => x.id === g) ? g : null;
     }
     else if (h.startsWith('producto/')) { name = 'producto'; arg = h.split('/')[1]; }
     else if (h.startsWith('enviado')) name = 'enviado';
@@ -874,6 +1021,7 @@
   /* ---------- Inicio ---------- */
   renderHero();
   renderCircles();
+  renderMega();
   renderGrids();
   updateCount();
   updateFavCount();
