@@ -69,6 +69,7 @@
     sizes: new Set(),
     priceMin: 0,
     priceMax: Infinity,
+    delivery: 'all', // 'all' | 'inmediata' | 'preventa'
     order: store.get('order', {}),
     contact: store.get('contact', {}),
     favs: new Set(store.get('favs', [])),
@@ -84,7 +85,19 @@
     && matchQ(p)
     && (!state.sizes.size || [...state.sizes].some(i => p.slots.has(i)))
     && p.price >= state.priceMin
-    && p.price <= state.priceMax;
+    && p.price <= state.priceMax
+    && (state.delivery === 'all' || deliveryOf(p) === state.delivery);
+
+  // Tipo de entrega: en data.js cada producto puede llevar "delivery": "preventa"; si no lo trae, es entrega inmediata.
+  function deliveryOf(p) { return p.delivery === 'preventa' ? 'preventa' : 'inmediata'; }
+  function setDelivery(v) {
+    state.delivery = v;
+    const r = document.querySelector(`[name="delivery"][value="${v}"]`);
+    if (r) r.checked = true;
+  }
+  document.addEventListener('change', e => {
+    if (e.target.name === 'delivery') { state.delivery = e.target.value; applyFilter(); }
+  });
 
   function resetPriceFilter() {
     state.priceMin = 0; state.priceMax = Infinity;
@@ -177,12 +190,6 @@
     });
 
     const sizeBtn = i => `<button class="size" type="button" data-size="${i}" aria-pressed="false" aria-label="${SLOT_LONG[i]}">${SLOTS[i]}</button>`;
-    $('[data-sizes="home"]').innerHTML = SLOTS.map((_, i) => sizeBtn(i)).join('');
-    $('[data-sizes="home"]').addEventListener('click', e => {
-      const b = e.target.closest('[data-size]'); if (!b) return;
-      state.sizes = new Set([+b.dataset.size]); state.cat = 'todos'; clearSearch();
-      location.hash = '#/catalogo';
-    });
     const catSizes = $('[data-sizes="cat"]');
     catSizes.innerHTML = SLOTS.map((_, i) => sizeBtn(i)).join('') + `<button class="clear" type="button" data-clear hidden>Limpiar</button>`;
     catSizes.addEventListener('click', e => {
@@ -337,6 +344,9 @@
   // Si algún día el producto trae `compareAt` (precio anterior real por prenda), se muestra tachado con su % de descuento.
   const discount = p => p.compareAt > p.unitPrice ? Math.round((1 - p.unitPrice / p.compareAt) * 100) : 0;
   const scarce = p => p.stock === 'casi-agotado';
+  const deliveryTag = p => deliveryOf(p) === 'preventa'
+    ? `<span class="dlv dlv-pre">${icon('box')} Preventa</span>`
+    : `<span class="dlv dlv-now">${icon('check')} Entrega inmediata</span>`;
   function card(p, variant = '') {
     const alt = p.images.find(src => src !== p.cover && src !== p.flyer);
     const off = discount(p);
@@ -354,11 +364,11 @@
         <div class="body">
           <h3><a href="#/producto/${p.slug}">${esc(p.name)}</a></h3>
           <div class="price-row">
-            <p class="price"><b class="num">${money(p.unitPrice)}</b><small>c/u</small>${off ? `<s class="num">${money(p.compareAt)}</s>` : ''}</p>
+            <p class="price"><b class="num">${money(p.price)}</b><small>${p.saleType === 'serie' ? 'la serie' : 'el box'}</small></p>
             <button class="quick" type="button" data-quick="${p.slug}" aria-label="Agregar 1 ${packWord(p, 1)} de ${esc(p.name)} al pedido">${icon('bagplus')}</button>
           </div>
-          <p class="meta"><span class="num">${money(p.price)}</span> ${p.saleType === 'serie' ? 'la serie' : 'el box'} · ${sizeSpan(p)}</p>
-          ${scarce(p) ? `<p class="hurry">${icon('bolt')} Casi agotado</p>` : ''}
+          <p class="meta"><span class="num">${money(p.unitPrice)}</span> c/u${off ? ` <s class="num">${money(p.compareAt)}</s>` : ''} · ${sizeSpan(p)}</p>
+          <p class="tags-row">${deliveryTag(p)}${scarce(p) ? `<span class="hurry">${icon('bolt')} Casi agotado</span>` : ''}</p>
         </div>
       </article>`;
   }
@@ -465,6 +475,7 @@
     if (c.id !== 'todos') chips.push(['cat', c.label]);
     if (g) chips.push(['group', g.label]);
     [...state.sizes].sort((a, b) => a - b).forEach(i => chips.push(['size:' + i, 'Talla ' + SLOTS[i]]));
+    if (state.delivery !== 'all') chips.push(['delivery', state.delivery === 'preventa' ? 'Preventa' : 'Entrega inmediata']);
     if (state.priceMin > 0 || state.priceMax < Infinity) {
       chips.push(['price', state.priceMax < 90000 ? `S/${state.priceMin} – S/${state.priceMax}` : `Desde S/${state.priceMin}`]);
     }
@@ -527,12 +538,13 @@
       else if (k === 'cat') { state.cat = state.group || 'todos'; state.group = null; history.replaceState(null, '', '#/catalogo' + (state.cat === 'todos' ? '' : '/' + state.cat)); }
       else if (k === 'group') { state.group = null; history.replaceState(null, '', '#/catalogo' + (state.cat === 'todos' ? '' : '/' + state.cat)); }
       else if (k === 'price') resetPriceFilter();
+      else if (k === 'delivery') setDelivery('all');
       else if (k.startsWith('size:')) state.sizes.delete(+k.slice(5));
       applyFilter();
     }
   });
   document.addEventListener('click', e => {
-    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; state.group = null; clearSearch(); resetPriceFilter(); history.replaceState(null, '', '#/catalogo'); applyFilter(); }
+    if (e.target.closest('[data-reset]')) { state.sizes.clear(); state.cat = 'todos'; state.group = null; clearSearch(); resetPriceFilter(); setDelivery('all'); history.replaceState(null, '', '#/catalogo'); applyFilter(); }
     const q = e.target.closest('[data-quick]');
     if (q) {
       const p = PRODUCTS.find(x => x.slug === q.dataset.quick);
