@@ -76,8 +76,19 @@ ul,ol{margin:0;padding:0;list-style:none}
 .top{position:sticky;top:0;z-index:40;background:#fff;transition:box-shadow .25s var(--ease)}
 .top.scrolled{box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .top-row{display:flex;align-items:center;gap:clamp(16px,3vw,40px);height:68px}
-.brand{flex:none;display:block}
-.brand img{height:24px;width:auto}
+.brand{flex:none;display:block;text-decoration:none}
+/* Logo: icono + nombre en Fredoka (redondeada) + bajada */
+.logo{display:inline-flex;align-items:center;gap:9px;color:var(--ink)}
+.logo-mark{flex:none;width:38px;height:38px;filter:drop-shadow(0 2px 4px rgba(212,83,122,.25))}
+.logo-txt{display:flex;flex-direction:column;line-height:1}
+.logo-name{font-family:'Fredoka',var(--font);font-weight:700;font-size:25px;letter-spacing:-.01em;color:#2B2B2B;white-space:nowrap}
+.logo-name span{color:var(--pink)}
+.logo-tag{margin-top:3px;font-size:8.5px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.brand:hover .logo-mark{transform:rotate(-6deg)}
+.logo-mark{transition:transform .25s var(--ease)}
+.logo-sm .logo-mark{width:26px;height:26px;filter:none}
+.logo-sm .logo-name{font-size:17px}
+.logo-sm .logo-tag{display:none}
 .search{flex:1;max-width:620px;margin:0 auto;display:flex;height:40px;border:1.5px solid var(--black);background:#fff}
 .search input{flex:1;min-width:0;border:0;outline:0;background:none;padding:0 14px;font-size:14px}
 .search input::placeholder{color:var(--muted)}
@@ -167,7 +178,10 @@ ul,ol{margin:0;padding:0;list-style:none}
 @media (max-width:759px){
   :root{--head-h:150px}
   .top-row{flex-wrap:wrap;height:auto;gap:8px 10px;padding-top:10px;padding-bottom:10px}
-  .brand img{height:19px}
+  .logo-mark{width:30px;height:30px}
+  .logo{gap:7px}
+  .logo-name{font-size:20px}
+  .logo-tag{font-size:7px;letter-spacing:.2em;margin-top:2px}
   .top-icons{margin-left:auto;gap:0}
   .ico{min-width:44px}
   .ico span:not(.count){display:none}
