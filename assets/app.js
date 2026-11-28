@@ -22,9 +22,21 @@
 
   const money = n => 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const money0 = n => 'S/ ' + (Math.round(n * 100) / 100).toLocaleString('es-PE', { maximumFractionDigits: 2 });
-  const packWord = (p, n) => p.saleType === 'serie' ? (n === 1 ? 'serie' : 'series') : (n === 1 ? 'box' : 'boxes');
-  const typeLabel = p => p.saleType === 'serie' ? `Serie de ${p.units}` : `Box de ${p.units}`;
-  const sizeSpan = p => `${prettySize(p.sizes[0])} a ${prettySize(p.sizes[p.sizes.length - 1])}`;
+  const packWord = (p, n) => p.saleType === 'serie' ? (n === 1 ? 'serie' : 'series') : p.saleType === 'paca' ? (n === 1 ? 'paca' : 'pacas') : (n === 1 ? 'box' : 'boxes');
+  const typeLabel = p => p.saleType === 'serie' ? `Serie de ${p.units}` : p.saleType === 'paca' ? `Paca de ${p.units}` : `Box de ${p.units}`;
+  const priceWord = p => p.saleType === 'serie' ? 'la serie' : p.saleType === 'paca' ? 'la paca' : 'el box';
+  const sizeSpan = p => p.sizeLabel || `${prettySize(p.sizes[0])} a ${prettySize(p.sizes[p.sizes.length - 1])}`;
+  const sizesText = p => p.sizeLabel ? `${p.sizeLabel} (a elección)` : p.sizes.map(prettySize).join(', ');
+  // Pacas: cada cantidad (15/25/50/100) va al pedido con la clave "slug@unidades"
+  const variant = (p, units) => {
+    const t = p.tiers && p.tiers.find(x => x.units === units);
+    return t ? { ...p, key: `${p.slug}@${t.units}`, units: t.units, price: t.price, unitPrice: t.unitPrice, freeShip: t.freeShip } : p;
+  };
+  const findLine = key => {
+    const [slug, u] = key.split('@');
+    const p = PRODUCTS.find(x => x.slug === slug);
+    return p && u ? variant(p, +u) : p;
+  };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -50,7 +62,10 @@
     { id: 'invierno', label: 'Invierno', home: false, img: 'assets/img/serie-chompa-tejida-bebe/02.jpg', test: p => has(p, 'Invierno') || /invierno/i.test(p.details.temporada || '') },
     { id: 'verano', label: 'Verano', home: false, img: 'assets/img/serie-vestido-lino-rosado/02.jpg', test: p => has(p, 'Verano') || /verano/i.test(p.details.temporada || '') },
     { id: 'series', label: 'Series', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-c/02.jpg', test: p => p.saleType === 'serie' },
-    { id: 'boxes', label: 'Boxes', img: 'https://khloe-shopp-demo.vercel.app/seed/images/box-vestidos-jeans-surtido/02.jpg', test: p => p.saleType !== 'serie' },
+    { id: 'boxes', label: 'Boxes', img: 'https://khloe-shopp-demo.vercel.app/seed/images/box-vestidos-jeans-surtido/02.jpg', test: p => p.saleType === 'pack' },
+    { id: 'pacas', label: 'Pacas', home: false, img: 'assets/img/paca-emprendedora-mixta/cover.jpg', test: p => p.saleType === 'paca' },
+    { id: 'calzado', label: 'Calzado', home: false, img: 'assets/img/paca-calzado/cover.jpg', test: p => has(p, 'Calzado') },
+    { id: 'accesorios', label: 'Accesorios', home: false, img: 'assets/img/paca-accesorios/cover.jpg', test: p => has(p, 'Accesorios') },
     { id: 'todos', label: 'Todo', img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-a/02.jpg', test: () => true },
     { id: 'nuevo', label: 'Nuevo', home: false, img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-a/03.jpg', test: p => p.isNew },
     { id: 'favoritos', label: 'Favoritos', home: false, img: 'https://khloe-shopp-demo.vercel.app/seed/images/serie-vestidos-jeans-b/03.jpg', test: p => state.favs.has(p.slug) }
@@ -79,7 +94,7 @@
     lastSent: null
   };
   const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const haystack = p => norm([p.name, p.category, p.summary, p.saleType === 'serie' ? 'serie series' : 'box boxes pack cajon', ...p.tags].join(' '));
+  const haystack = p => norm([p.name, p.category, p.summary, p.saleType === 'serie' ? 'serie series' : p.saleType === 'paca' ? 'paca pacas preventa' : 'box boxes pack cajon', ...p.tags].join(' '));
   const matchQ = p => !state.q || norm(state.q).split(/\s+/).filter(Boolean).every(w => haystack(p).includes(w));
   const matches = p => catById(state.cat).test(p)
     && (!state.group || catById(state.group).test(p))
@@ -358,14 +373,14 @@
             <img src="${p.cover}" alt="" loading="lazy" width="1179" height="1540">
             ${alt ? `<img class="ph-alt" src="${alt}" alt="" loading="lazy" width="1179" height="1540">` : ''}
             <span class="badges">${off ? `<b class="b-off">-${off}%</b>` : ''}${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}</span>
-            <span class="ph-type">${typeLabel(p)} prendas</span>
+            <span class="ph-type">${p.tiers ? `Paca de ${p.tiers[0].units} a ${p.tiers[p.tiers.length - 1].units}` : typeLabel(p)} prendas</span>
           </a>
           ${favBtn(p)}
         </div>
         <div class="body">
           <h3><a href="#/producto/${p.slug}">${esc(p.name)}</a></h3>
           <div class="price-row">
-            <p class="price"><b class="num">${money(p.price)}</b><small>${p.saleType === 'serie' ? 'la serie' : 'el box'}</small></p>
+            <p class="price">${p.tiers ? '<small>desde</small>' : ''}<b class="num">${money(p.price)}</b><small>${priceWord(p)}</small></p>
             <button class="quick" type="button" data-quick="${p.slug}" aria-label="Agregar 1 ${packWord(p, 1)} de ${esc(p.name)} al pedido">${icon('bagplus')}</button>
           </div>
           <p class="meta"><span class="num">${money(p.unitPrice)}</span> c/u${off ? ` <s class="num">${money(p.compareAt)}</s>` : ''} · ${sizeSpan(p)}</p>
@@ -385,7 +400,7 @@
       </a>`;
   }
   function renderFlash() {
-    const list = [...PRODUCTS].sort((a, b) => (scarce(b) - scarce(a)) || (b.isNew - a.isNew) || (a.unitPrice - b.unitPrice));
+    const list = PRODUCTS.filter(p => deliveryOf(p) !== 'preventa').sort((a, b) => (scarce(b) - scarce(a)) || (b.isNew - a.isNew) || (a.unitPrice - b.unitPrice));
     $('[data-flash]').innerHTML = list.map(flashCard).join('');
     const cd = $('[data-countdown]');
     const pad = n => String(n).padStart(2, '0');
@@ -421,7 +436,14 @@
     });
   }
   function paintHomeGrid() {
-    const list = PRODUCTS.filter(catById(state.homeTab).test).filter(p => deliveryOf(p) === state.homeDelivery);
+    // Oculta las pestañas que no tienen productos en el tipo de entrega elegido
+    const inDlv = PRODUCTS.filter(p => deliveryOf(p) === state.homeDelivery);
+    $$('[data-home-tabs] [data-tab]').forEach(b => { b.hidden = b.dataset.tab !== 'todos' && !inDlv.some(catById(b.dataset.tab).test); });
+    if (state.homeTab !== 'todos' && !inDlv.some(catById(state.homeTab).test)) {
+      state.homeTab = 'todos';
+      $$('[data-home-tabs] [data-tab]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.tab === 'todos')));
+    }
+    const list = inDlv.filter(catById(state.homeTab).test);
     const empty = state.homeDelivery === 'preventa'
       ? `<div class="empty"><h3>Pronto abrimos nuevas preventas</h3><p>Escríbenos y te avisamos cuando haya modelos en preventa.</p></div>`
       : `<div class="empty"><h3>Pronto llegan más modelos</h3><p>Escríbenos y te avisamos cuando lleguen.</p></div>`;
@@ -558,7 +580,7 @@
     const q = e.target.closest('[data-quick]');
     if (q) {
       const p = PRODUCTS.find(x => x.slug === q.dataset.quick);
-      addToOrder(p.slug, 1);
+      addToOrder(p.tiers ? `${p.slug}@${p.tiers[0].units}` : p.slug, 1);
       q.classList.remove('done'); void q.offsetWidth; q.classList.add('done');
       toast(`Agregaste 1 ${packWord(p, 1)} · ${p.units} prendas`, 'Ver pedido', openOrder);
     }
@@ -617,14 +639,18 @@
   const PRESETS = [1, 3, 5, 10];
   const MAX_QTY = 99;
   function renderDetail(slug) {
-    const p = PRODUCTS.find(x => x.slug === slug);
+    const base = PRODUCTS.find(x => x.slug === slug);
     const host = $('[data-detail]');
-    if (!p) { host.innerHTML = `<div class="sent"><h1>Este modelo ya no está.</h1><a class="btn btn-ink" href="#/catalogo">Ver catálogo</a></div>`; return; }
-    const imgs = p.images.slice(1).concat(p.images[0]);
+    if (!base) { host.innerHTML = `<div class="sent"><h1>Este modelo ya no está.</h1><a class="btn btn-ink" href="#/catalogo">Ver catálogo</a></div>`; return; }
+    const isPaca = !!base.tiers;
+    const pre = deliveryOf(base) === 'preventa';
+    let p = isPaca ? variant(base, base.tiers[0].units) : base;
+    const imgs = isPaca ? p.images : p.images.slice(1).concat(p.images[0]);
     const d = p.details;
     const rows = [
-      ['Tipo', typeLabel(p) + ' prendas'],
-      ['Tallas', p.sizes.map(prettySize).join(' · ')],
+      ['Tipo', isPaca ? `Paca de ${base.tiers.map(t => t.units).join(', ').replace(/, (\d+)$/, ' o $1')} prendas` : typeLabel(p) + ' prendas'],
+      ['Tallas', isPaca ? sizesText(p) : p.sizes.map(prettySize).join(' · ')],
+      pre && ['Entrega', 'Preventa: llega en 18 a 35 días hábiles'],
       d.composicion && ['Composición', d.composicion],
       d.material && ['Material', d.material],
       d.longitud && ['Largo', d.longitud],
@@ -649,23 +675,29 @@
           </div>
         </div>
         <div class="info">
-          <span class="badges">${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}<b class="b-type">${typeLabel(p)} prendas</b>${scarce(p) ? `<b class="b-hot">${icon('bolt')} Casi agotado</b>` : ''}</span>
+          <span class="badges">${p.isNew ? '<b class="b-new">Nuevo</b>' : ''}${pre ? `<b class="b-pre">${icon('box')} Preventa</b>` : ''}<b class="b-type">${isPaca ? 'Paca' : typeLabel(p) + ' prendas'}</b>${scarce(p) ? `<b class="b-hot">${icon('bolt')} Casi agotado</b>` : ''}</span>
           <h1>${esc(p.name)}</h1>
           <p class="sku">Código: <span class="num">${esc(p.code)}</span></p>
 
-          <div class="price-box">
-            <div class="big-price"><b class="num">${money(p.unitPrice)}</b><span>por prenda</span>${off ? `<s class="num">${money(p.compareAt)}</s><em class="b-off">-${off}%</em>` : ''}</div>
-            <p class="pack">${typeLabel(p)} prendas · <b class="num">${money(p.price)}</b> ${p.saleType === 'serie' ? 'la serie' : 'el box'}</p>
-          </div>
+          <div class="price-box" data-pricebox></div>
           <p class="summary">${esc(p.summary)}</p>
 
+          ${isPaca ? `
+          <div class="block">
+            <p class="lbl" id="lbl-tier">Tamaño de la paca <span>Tú escoges tallas y modelos</span></p>
+            <div class="tiers" role="radiogroup" aria-labelledby="lbl-tier">
+              ${base.tiers.map((t, i) => `<button type="button" class="tier" role="radio" data-tier="${t.units}" aria-checked="${i === 0}">
+                <b class="num">${t.units} unds</b><span class="num">${money(t.price)}</span><small class="num">${money(t.unitPrice)} c/u</small>${t.freeShip ? '<em>Envío gratis</em>' : ''}</button>`).join('')}
+            </div>
+            <p class="size-note">Tallas: ${esc(p.sizeLabel)}. Ejemplo: en una paca de 50 puedes pedir 15 prendas de una talla, 15 de otra y 20 de otra.</p>
+          </div>` : `
           <div class="block">
             <p class="lbl">Tallas que trae <span>${p.saleType === 'serie' ? 'Una prenda por talla' : 'Surtido'}</span></p>
             <div class="sizes sizes-read" aria-label="Tallas que trae: ${p.sizes.map(prettySize).join(', ')}">
               ${SLOTS.map((s, i) => `<span class="size${p.slots.has(i) ? ' on' : ''}" aria-hidden="true">${s}</span>`).join('')}
             </div>
             <p class="size-note">${p.sizes.map(prettySize).join(' · ')}</p>
-          </div>
+          </div>`}
 
           <div class="block qty">
             <p class="lbl" id="lbl-qty">Cantidad de ${unitName}</p>
@@ -687,11 +719,16 @@
             <p class="added" data-added aria-live="polite"></p>
           </div>
 
-          <ul class="assure">
+          <ul class="assure">${pre ? `
+            <li>${icon('box')}<div><b>Preventa: llega en 18 a 35 días hábiles</b><span>Importado directo de China. Te enviamos un collage con los modelos para que los apruebes.</span></div></li>
+            <li>${icon('card')}<div><b>Separas con el 50%</b><span>El otro 50% lo pagas cuando tu paca llega a nuestro almacén. Yape, Plin o transferencia.</span></div></li>
+            <li>${icon('truck')}<div><b>Envío gratis desde 50 unidades</b><span>Por Shalom a todo el Perú. Prendas 100% nuevas.</span></div></li>
+            <li>${icon('shield')}<div><b>Condiciones de preventa</b><span>Una vez confirmado el pago no se aceptan cancelaciones. El adelanto solo se devuelve si el pedido pasa el tiempo límite de llegada.</span></div></li>
+          </ul>` : `
             <li>${icon('truck')}<div><b>Despacho en 2–3 días hábiles</b><span>Por Shalom. Recoges en la agencia que elijas.</span></div></li>
             <li>${icon('card')}<div><b>Pagas al confirmar</b><span>Yape, Plin o transferencia, coordinado por WhatsApp.</span></div></li>
             <li>${icon('shield')}<div><b>Prendas nuevas y etiquetadas</b><span>Cada una en su bolsa, listas para revender.</span></div></li>
-          </ul>
+          </ul>`}
 
           <details class="acc" open>
             <summary>Saca tu cuenta ${icon('chevd')}</summary>
@@ -711,6 +748,18 @@
         </div>
       </div>`;
 
+    const priceBox = $('[data-pricebox]', host);
+    const paintPrice = () => {
+      priceBox.innerHTML = `
+            <div class="big-price"><b class="num">${money(p.unitPrice)}</b><span>por prenda</span>${off ? `<s class="num">${money(p.compareAt)}</s><em class="b-off">-${off}%</em>` : ''}</div>
+            <p class="pack">${typeLabel(p)} prendas · <b class="num">${money(p.price)}</b> ${priceWord(p)}${p.freeShip ? ' · <b class="ship">Envío gratis</b>' : ''}</p>`;
+    };
+    paintPrice();
+    $$('[data-tier]', host).forEach(b => b.addEventListener('click', () => {
+      p = variant(base, +b.dataset.tier);
+      $$('[data-tier]', host).forEach(x => x.setAttribute('aria-checked', String(x === b)));
+      paintPrice(); setQty(qty);
+    }));
     let qty = 1;
     const qtyEl = $('[data-qty]', host);
     const minus = $('[data-q="-1"]', host);
@@ -726,7 +775,7 @@
     host.querySelectorAll('[data-q]').forEach(b => b.addEventListener('click', () => setQty(qty + +b.dataset.q)));
     host.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => setQty(+b.dataset.preset)));
     $('[data-add]', host).addEventListener('click', () => {
-      addToOrder(p.slug, qty);
+      addToOrder(p.key || p.slug, qty);
       $('[data-added]', host).innerHTML = `${icon('check')} Listo: ${qty} ${packWord(p, qty)} (${qty * p.units} prendas) en tu pedido.`;
       toast(`Agregaste ${qty} ${packWord(p, qty)} · ${qty * p.units} prendas`, 'Ver pedido', openOrder);
     });
@@ -762,7 +811,7 @@
   }
 
   /* ---------- Pedido ---------- */
-  const lines = () => Object.entries(state.order).map(([slug, q]) => ({ p: PRODUCTS.find(x => x.slug === slug), q })).filter(l => l.p && l.q > 0);
+  const lines = () => Object.entries(state.order).map(([key, q]) => ({ p: findLine(key), key, q })).filter(l => l.p && l.q > 0);
   const totals = () => lines().reduce((t, { p, q }) => ({ packs: t.packs + q, units: t.units + q * p.units, amount: t.amount + q * p.price }), { packs: 0, units: 0, amount: 0 });
   function saveOrder() { store.set('order', state.order); updateCount(); }
   function updateCount() {
@@ -788,16 +837,16 @@
     const c = state.contact;
     body.innerHTML = `
       <div class="sheet">
-        ${ls.map(({ p, q }) => `
+        ${ls.map(({ p, key, q }) => `
           <div class="line">
             <img src="${p.cover}" alt="" width="64" height="80">
             <div><h4>${esc(p.name)}</h4><div class="m">${typeLabel(p)} · ${money(p.unitPrice)} c/u</div><div class="m"><span class="num">${q * p.units}</span> prendas</div></div>
             <div class="r">
               <b class="num">${money(p.price * q)}</b>
               <div class="stepper stepper-sm" role="group" aria-label="Cantidad de ${esc(p.name)}">
-                <button type="button" data-line="${p.slug}" data-d="-1" aria-label="${q === 1 ? 'Quitar del pedido' : 'Quitar una'}">${icon(q === 1 ? 'x' : 'minus')}</button>
+                <button type="button" data-line="${key}" data-d="-1" aria-label="${q === 1 ? 'Quitar del pedido' : 'Quitar una'}">${icon(q === 1 ? 'x' : 'minus')}</button>
                 <output class="num">${q}</output>
-                <button type="button" data-line="${p.slug}" data-d="1" aria-label="Agregar una"${q >= MAX_QTY ? ' disabled' : ''}>${icon('plus')}</button>
+                <button type="button" data-line="${key}" data-d="1" aria-label="Agregar una"${q >= MAX_QTY ? ' disabled' : ''}>${icon('plus')}</button>
               </div>
             </div>
           </div>`).join('')}
@@ -922,7 +971,7 @@
   function buildMessage(v) {
     const t = totals();
     const out = ['Hola Khloe Shopp, quiero hacer este pedido por mayor:', ''];
-    lines().forEach(({ p, q }) => out.push(`• ${q} × ${p.name} (${typeLabel(p).toLowerCase()} · ${q * p.units} prendas · tallas ${p.sizes.map(prettySize).join(', ')}) — ${money(p.price * q)}`));
+    lines().forEach(({ p, q }) => out.push(`• ${q} × ${p.name} (${typeLabel(p).toLowerCase()} · ${q * p.units} prendas · tallas ${sizesText(p)}${deliveryOf(p) === 'preventa' ? ' · PREVENTA' : ''}) — ${money(p.price * q)}`));
     out.push('', `Total: ${t.packs} ${t.packs === 1 ? 'paquete' : 'paquetes'} · ${t.units} prendas · ${money(t.amount)}`, '');
     out.push(`Nombre: ${v.nombre.trim()}`, `Celular: ${v.celular.trim()}`);
     if (v.destino === 'otro') {

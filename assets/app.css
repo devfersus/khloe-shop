@@ -603,6 +603,18 @@ button.size:hover{border-color:var(--black)}
 .big-price s{color:var(--muted);font-size:14px}
 .pack{margin-top:6px;color:var(--ink-2);font-size:13px}
 .pack b{color:var(--ink)}
+.pack b.ship{color:var(--ok)}
+.b-pre{color:#5B3FC4!important;background:#EFEAFD!important;border-color:#DCD2FA!important}
+/* Selector de tamaño de paca (15 / 25 / 50 / 100 unds) */
+.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tier{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);text-align:center;transition:border-color .2s,background-color .2s,box-shadow .2s}
+.tier:hover{border-color:var(--black)}
+.tier b{font-size:14px;font-weight:800}
+.tier span{font-size:13px;font-weight:700;color:var(--sale-deep)}
+.tier small{font-size:11px;color:var(--ink-2)}
+.tier em{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);white-space:nowrap;font-style:normal;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:#fff;background:var(--ok);padding:2px 6px;border-radius:999px}
+.tier[aria-checked="true"]{border-color:var(--black);background:var(--pink-50);box-shadow:0 0 0 1px var(--black)}
+@media (max-width:420px){.tiers{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:16px}}
 .summary{color:var(--ink-2);margin-top:14px;font-size:13.5px}
 .block{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
 .size-note{font-size:12px;color:var(--muted);margin-top:8px}
