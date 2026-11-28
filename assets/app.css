@@ -7,15 +7,15 @@
   --line:#F1DDE3;
   --line-2:#F8ECEF;
   --soft:#FDF4F6;
-  --black:#C9476E;         /* acento principal (botones, chips, activos): rosa del logo en tono legible */
-  --black-deep:#AE3659;
-  --sale:#E5386A;          /* precio / oferta */
-  --sale-deep:#CC2457;
+  --black:#EC8AA2;         /* acento principal (botones, chips, activos): rosa del logo en tono legible */
+  --black-deep:#E27893;
+  --sale:#EC8AA2;          /* precio / oferta */
+  --sale-deep:#E27893;
   --sale-50:#FFEEF3;
   --pink-brand:#F7A3B4;    /* rosa oficial del logo (fondos) */
   --pink-logo:#EC8AA2;     /* logo sobre blanco, un punto más intenso */
-  --pink:#D4537A;          /* rosa para textos/insignias (contraste legible) */
-  --pink-deep:#B93D63;
+  --pink:#EC8AA2;          /* rosa para textos/insignias (contraste legible) */
+  --pink-deep:#E27893;
   --pink-50:#FDEEF3;
   --wa:#1E7A4C;
   --wa-deep:#17663F;
@@ -226,7 +226,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .slides::-webkit-scrollbar{display:none}
 .slide{scroll-snap-align:start;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);height:clamp(340px,36vw,520px);overflow:hidden}
 .t-pink{background:linear-gradient(120deg,#FDE6EC 0%,var(--pink-200) 100%)}
-.t-red{background:linear-gradient(120deg,#E7708F 0%,#C9476E 100%);color:#fff}
+.t-red{background:linear-gradient(120deg,#F7A3B4 0%,#EC8AA2 100%);color:#fff}
 .t-sky{background:#FBEAF0}
 .slide-copy{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:12px;padding:clamp(24px,5vw,80px);padding-left:max(var(--gut), calc((100vw - var(--max)) / 2 + var(--gut)))}
 .eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
@@ -251,10 +251,14 @@ ul,ol{margin:0;padding:0;list-style:none}
 .dots button[aria-current="true"]{width:24px;background:var(--black);border-color:var(--black)}
 @media (max-width:759px){
   .slide{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto}
-  .slide-pics{order:-1;height:72vw;max-height:440px}
-  .slide-copy{padding:18px var(--gut) 40px;gap:8px}
-  .slide h1,.slide h2{font-size:clamp(26px,8vw,38px);max-width:none}
-  .slide .btn{min-height:42px;padding:10px 22px}
+  .slide-pics{order:-1;height:46vw;max-height:300px}
+  .slide-pics img{object-position:center 25%}
+  .slide-copy{padding:12px var(--gut) 30px;gap:5px}
+  .slide .eyebrow{font-size:10px}
+  .slide h1,.slide h2{font-size:clamp(20px,6vw,28px);max-width:none}
+  .slide-copy>p{display:none}
+  .slide .from b{font-size:20px}
+  .slide .btn{margin-top:2px;min-height:38px;padding:8px 20px}
   .hero-nav{display:none}
 }
 
@@ -353,6 +357,11 @@ button.size:hover{border-color:var(--black)}
 }
 
 /* ---------- Pestañas ---------- */
+.dlv-switch{display:flex;width:max-content;max-width:100%;margin:0 auto 14px;padding:4px;gap:4px;background:var(--pink-50);border:1px solid var(--line);border-radius:999px}
+.dlv-switch button{flex:1;border:0;background:none;padding:9px 20px;border-radius:999px;font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background-color .2s var(--ease),color .2s}
+.dlv-switch button:hover{color:var(--ink)}
+.dlv-switch button[aria-checked="true"]{background:var(--black);color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(236,138,162,.35)}
+@media (max-width:759px){.dlv-switch{width:100%}.dlv-switch button{padding:9px 10px;font-size:13px}}
 .tabs{display:flex;justify-content:center;gap:4px;margin:-4px 0 22px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{position:relative;flex:none;border:0;background:none;padding:10px 16px 12px;font-size:14px;color:var(--ink-2);white-space:nowrap}
@@ -422,7 +431,7 @@ button.size:hover{border-color:var(--black)}
 .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 
 /* ---------- Encargo SHEIN / Temu ---------- */
-.encargo{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:20px 40px;background:linear-gradient(110deg,#C9476E 0%,#D85A80 55%,var(--pink-brand) 120%);color:#fff;padding:clamp(24px,4vw,48px) clamp(20px,4vw,56px)}
+.encargo{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:20px 40px;background:linear-gradient(110deg,#EC8AA2 0%,#F094AB 55%,var(--pink-brand) 120%);color:#fff;padding:clamp(24px,4vw,48px) clamp(20px,4vw,56px)}
 .encargo::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.35),transparent 70%);pointer-events:none}
 .encargo-copy{position:relative;z-index:1}
 .encargo .eyebrow{color:#fff;opacity:.9}

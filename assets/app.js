@@ -75,6 +75,7 @@
     favs: new Set(store.get('favs', [])),
     q: '',
     homeTab: 'todos',
+    homeDelivery: 'inmediata', // 'inmediata' | 'preventa' (selector de "Para ti")
     lastSent: null
   };
   const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -411,11 +412,20 @@
       $$('[data-tab]', host).forEach(x => x.setAttribute('aria-selected', String(x === b)));
       paintHomeGrid();
     });
+    const dlv = $('[data-home-dlv]');
+    if (dlv) dlv.addEventListener('click', e => {
+      const b = e.target.closest('[data-dlv]'); if (!b) return;
+      state.homeDelivery = b.dataset.dlv;
+      $$('[data-dlv]', dlv).forEach(x => x.setAttribute('aria-checked', String(x === b)));
+      paintHomeGrid();
+    });
   }
   function paintHomeGrid() {
-    const list = PRODUCTS.filter(catById(state.homeTab).test);
-    $('[data-grid="home"]').innerHTML = list.length ? list.map(p => card(p)).join('')
+    const list = PRODUCTS.filter(catById(state.homeTab).test).filter(p => deliveryOf(p) === state.homeDelivery);
+    const empty = state.homeDelivery === 'preventa'
+      ? `<div class="empty"><h3>Pronto abrimos nuevas preventas</h3><p>Escríbenos y te avisamos cuando haya modelos en preventa.</p></div>`
       : `<div class="empty"><h3>Pronto llegan más modelos</h3><p>Escríbenos y te avisamos cuando lleguen.</p></div>`;
+    $('[data-grid="home"]').innerHTML = list.length ? list.map(p => card(p)).join('') : empty;
   }
   function renderGrids() {
     renderHomeTabs();
